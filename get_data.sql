@@ -3,7 +3,7 @@ SELECT
     climbs.frames, climbs.edge_bottom, climbs.edge_top, climbs.edge_left, climbs.edge_right,
     climb_stats.angle, climb_stats.display_difficulty, climb_stats.benchmark_difficulty,
     beta_links.link, beta_links.foreign_username, beta_links.angle as beta_angle, 
-    climb_cache_fields.ascensionist_count, climb_cache_fields.display_difficulty, climb_cache_fields.quality_average
+    climb_cache_fields.ascensionist_count, climb_cache_fields.display_difficulty, climb_cache_fields.quality_average climb_stats
 FROM 
     climbs
 JOIN 
