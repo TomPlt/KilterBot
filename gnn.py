@@ -6,6 +6,27 @@ import re
 
 kilter_xlim = 140
 kilter_ylim = 152
+# 12'x12' Original Layout
+# 323 unique bolt-on holds, 153 screw-on holds, 1060 LEDs/kit
+
+def map_hold_skus(skus):
+    sku_map = {}
+    for _, row in skus.iterrows():
+        num_range = create_range(row['NUMBERS'])
+        for num in num_range:
+            sku_map[str(num)] = row['SKU']
+    return sku_map
+
+def create_range(s):
+    if s[0].isdigit():
+        start, end = map(int, s.split('-'))
+        return list(range(start, end+1))
+    else:
+        start, end = s.split('-')
+        start_num = int(start[1:])
+        end_num = int(end[1:])
+        char = start[0]
+        return [f"{char}{i}" for i in range(start_num, end_num+1)]
 
 def extract_hold_data(frame_str):
     color_strings = re.findall(r'\d+', frame_str)
@@ -61,54 +82,50 @@ def compute_hold_id(x, y):
     elif (y - 20) % 16 == 0 and (x - 4) % 16 == 0 and y != 4 and y <= 132: 
         ny = (y - 20) // 16
         nx = (x - 4) // 16
-        return f"S2_{ny}_{nx}"  # Small hold type 2
+        return f"S2_{nx}_{ny}"  # Small hold type 2
     
     elif (y - 28) % 16 == 0 and (x - 12) % 16 == 0 and y != 12 and y <= 124:
         ny = (y - 28) // 16
         nx = (x - 12) // 16
-        return f"S3_{ny}_{nx}"  # Small hold type 3
+        return f"S3_{nx}_{ny}"  # Small hold type 3
     
     else:
         return None  # Invalid coordinates
 
 def generate_id_mapping(max_x=kilter_xlim, max_y=kilter_ylim):
     next_id = 0
+    coord_list = []
     id_mapping = {}
     for x in range(4, max_x + 1):
         for y in range(4, max_y + 1):
             str_id = compute_hold_id(x, y)
             if str_id is not None and str_id not in id_mapping:
                 id_mapping[str_id] = next_id
+                coord_list.append([x, y])
                 next_id += 1
-    return id_mapping
+    return id_mapping, coord_list
 
 def get_numeric_id(x, y, id_mapping):
     str_id = compute_hold_id(x, y)
     return id_mapping.get(str_id, None)
 
 def main():
-    id_mapping = generate_id_mapping()
-    print(id_mapping)
-    # for i in test:
-    #     print(compute_hold_id(i[0], i[1]))  
-    # print(compute_hold_id(0, 152))
+    df_climbs = pd.read_csv('data/csvs/climbs.csv')
+    df_colors = pd.read_csv('data/csvs/placement_roles.csv')
+    df_holes = pd.read_csv('data/csvs/holes.csv')
+    color_mapping = df_colors.set_index('id')['full_name'].to_dict()
 
-#     df_climbs = pd.read_csv('data/csvs/climbs.csv')
-#     df_colors = pd.read_csv('data/csvs/placement_roles.csv')
-#     df_holes = pd.read_csv('data/csvs/holes.csv')
-#     color_mapping = df_colors.set_index('id')['full_name'].to_dict()
-
-#     df_climbs['ids'] = df_climbs['frames'].apply(lambda x: extract_hold_data(x)[0::2])
-#     df_climbs['colors'] = df_climbs['frames'].apply(lambda x: extract_hold_data(x)[1::2])
-#     df_climbs['coordinates'] = df_climbs['ids'].apply(lambda x: get_coordinates(x, df_holes))
-#     df_climbs['hold_type'] = df_climbs.colors.apply(
-#         lambda x: [
-#             color_mapping.get(color) 
-#             if color else None
-#             for color in x
-#         ]
-#     )
-#     print(df_climbs.coordinates[1])
+    # df_climbs['ids'] = df_climbs['frames'].apply(lambda x: extract_hold_data(x)[0::2])
+    # df_climbs['colors'] = df_climbs['frames'].apply(lambda x: extract_hold_data(x)[1::2])
+    # df_climbs['coordinates'] = df_climbs['ids'].apply(lambda x: get_coordinates(x, df_holes))
+    # df_climbs['hold_type'] = df_climbs.colors.apply(
+    #     lambda x: [
+    #         color_mapping.get(color) 
+    #         if color else None
+    #         for color in x
+    #     ]
+    # )
+    # print(df_climbs.coordinates[1])
 
     # for index, row in df_climbs.iterrows():
     #     climb_data = {}
