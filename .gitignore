@@ -1,3 +1,4 @@
 app/*
 kilterproblems/kilterproblems
 todo.txt
+__pycache__/
