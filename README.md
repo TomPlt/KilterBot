@@ -6,7 +6,10 @@ Login and pull the database of Kilter app via `kilterproblems/Login.ps1` (Login 
 ## Example Climb 
 ![kilterimage](data/pngs/example_output.png)
 
-## Generating Graphs out of the beta videos of the climbs 
+## Hold Distributions Depending on Difficulty
+![heatmap](data/pngs/kilter_heatmap.png)
+
+## Generating Graphs out of Beta Videos of the Climbs 
 Using motion tracking with mediapipe in `climber.py` and save landmarks in `data/specific_landmarks_sequence.json` <br>
 ![climber](data/pngs/climber.gif) <br>
 comparing them to the static landmarks of the holds `data/holds.json` gives the squence information
