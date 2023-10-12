@@ -15,4 +15,7 @@ Using motion tracking with mediapipe in `climber.py` and save landmarks in `data
 comparing them to the static landmarks of the holds `data/holds.json` gives the squence information
 
 ## Mapping Landmarks to Kilterholds 
-![climber](data/pngs/hold_matching.png)
+![climber](data/pngs/hold_matching.png) <br>
+
+## Graph Visualization
+![swooped](data/pngs/swooped.png) 
