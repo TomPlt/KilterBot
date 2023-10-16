@@ -8,14 +8,18 @@ import matplotlib.pyplot as plt
 from scipy.sparse import csr_matrix, save_npz, load_npz
 from enum import Enum
 
+from tqdm import tqdm
+import torch
+from torch_geometric.data import Data
+import torch
+import torch.nn.functional as F
+from torch_geometric.nn import GCNConv, global_mean_pool
+from torch_geometric.data import Data
+
+
 class MtrxType(Enum):
     ADJACENCY_MATRIX = 0
     NODE_FEATURE_MATRIX = 1
-
-def data_load_in():
-    df_train = pd.read_csv('data/csvs/train.csv')
-    df_nodes = pd.read_csv('data/csvs/nodes.csv')
-    return df_train, df_nodes
 
 def generate_graphs(use_features=False):
     # List to store generated graphs
@@ -87,7 +91,6 @@ def build_sparse_matrix(df_nodes, nodes_list, hold_types):
     matrix[np.isnan(matrix)] = 0
     return csr_matrix(matrix)
 
-
 def visualize_graph(graphs: list, index):
     G = graphs[index]
 
@@ -106,7 +109,7 @@ def visualize_graph(graphs: list, index):
     plt.show()
 
 def graph_preprocessing():
-    df_train, df_nodes = data_load_in()
+    df_train, df_nodes = pd.read_csv('data/csvs/train.csv'), pd.read_csv('data/csvs/nodes.csv')
     df_nodes = pd.get_dummies(df_nodes, columns=['sku', 'hold_type'])
     df_nodes = df_nodes.drop(columns=['name'])
     df_nodes.screw_angle /= 360
@@ -143,9 +146,140 @@ def load_mtrx(index, type:MtrxType):
     else:
         raise Exception('Invalid type')
 
+def sparse_to_torch_tensor(sparse_matrix):
+    # Convert a scipy sparse matrix to a torch edge_index tensor
+    coo_matrix = sparse_matrix.tocoo()
+    indices = np.vstack((coo_matrix.row, coo_matrix.col))
+    edge_index = torch.tensor(indices, dtype=torch.long)
+    return edge_index
+
+def data_loadin():
+    df_train, df_nodes = pd.read_csv('data/csvs/train.csv'), pd.read_csv('data/csvs/nodes.csv')
+    difficulties = df_train.difficulty.to_numpy()
+    adjacency_matrices = []
+    node_feature_matrices = []
+    print("Loading matrices...")
+    for i in tqdm(range(len(difficulties))):
+        adjacency_matrices.append(load_mtrx(i, MtrxType.ADJACENCY_MATRIX))
+        node_feature_matrices.append(load_mtrx(i, MtrxType.NODE_FEATURE_MATRIX))
+    return adjacency_matrices, node_feature_matrices, difficulties
+
+def adjacency_to_edge_index(adjacency_matrix):
+    src, dst = np.where(adjacency_matrix > 0)
+    edge_index = np.stack((src, dst), axis=0)
+    return torch.tensor(edge_index, dtype=torch.long)
+
+import torch
+import torch.nn.functional as F
+from torch_geometric.nn import GCNConv, global_mean_pool
+
+class SimpleGNN(torch.nn.Module):
+    def __init__(self, input_dim, hidden_dim1, hidden_dim2, output_dim):
+        super(SimpleGNN, self).__init__()
+        self.conv1 = GCNConv(input_dim, hidden_dim1)  # First convolutional layer
+        self.conv2 = GCNConv(hidden_dim1, hidden_dim2)  # New second convolutional layer
+        self.conv3 = GCNConv(hidden_dim2, output_dim)  # Third convolutional layer, previously the second
+        self.lin = torch.nn.Linear(output_dim, 1)  # Linear layer remains unchanged
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+
+        # Apply first convolutional layer
+        x = self.conv1(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training, p=0.2)
+
+        # Apply new second convolutional layer
+        x = self.conv2(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training, p=0.2)
+
+        # Apply third convolutional layer
+        x = self.conv3(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training, p=0.2)
+
+        # Global mean pooling and linear layer
+        x = global_mean_pool(x, data.batch)  # Ensure 'data.batch' is provided
+        x = self.lin(x)
+
+        return x
+
+
+def train(data, model, optimizer, criterion):
+    model.train()
+    optimizer.zero_grad()
+    out = model(data)
+    loss = criterion(out, data.y)
+    loss.backward()
+    optimizer.step()
+    return loss.item()
+
+
+
+def run_training(adjacency_matrices, node_feature_matrices, difficulties, num_epochs=100, save_path='best_model.pt'):
+    model = SimpleGNN(input_dim=node_feature_matrices[0].shape[1], hidden_dim1=128, hidden_dim2=32, output_dim=1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    criterion = torch.nn.MSELoss()  
+
+    best_loss = float('inf')  # Initialize best loss as infinity
+    print("Training...")
+    for epoch in tqdm(range(num_epochs)):
+        total_loss = 0.0
+        for i in range(len(difficulties)):
+            # Converting sparse matrix to edge_index
+            edge_index = adjacency_to_edge_index(adjacency_matrices[i].todense())
+            x = torch.tensor(node_feature_matrices[i].todense(), dtype=torch.float)
+            y = torch.tensor([difficulties[i]], dtype=torch.float)  
+            data = Data(x=x, edge_index=edge_index, y=y)
+            
+            model.train()
+            optimizer.zero_grad()
+            out = model(data)
+            loss = criterion(out, data.y.unsqueeze(-1))
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+        
+        avg_loss = total_loss / len(difficulties)
+        print(f'Epoch: {epoch}, Loss: {avg_loss:.4f}')
+
+        # Checkpointing
+        if avg_loss < best_loss:
+            best_loss = avg_loss
+            torch.save(model.state_dict(), save_path)
+            print(f"Model saved with loss: {best_loss:.4f}")
+
+    # Load best model
+    model.load_state_dict(torch.load(save_path))
+    return model
+
+def run_inference(model, adjacency_matrices, node_feature_matrices, difficulties):
+    model.eval()
+    total_loss = 0.0
+    criterion = torch.nn.MSELoss()  
+
+    for i in range(len(difficulties)):
+        # Converting sparse matrix to edge_index
+        edge_index = adjacency_to_edge_index(adjacency_matrices[i].todense())
+        x = torch.tensor(node_feature_matrices[i].todense(), dtype=torch.float)
+        y = torch.tensor([difficulties[i]], dtype=torch.float)  
+        data = Data(x=x, edge_index=edge_index, y=y)
+        out = model(data)
+        loss = criterion(out, data.y.unsqueeze(-1))
+        total_loss += loss.item()
+    avg_loss = total_loss / len(difficulties)
+    print(f'Loss: {avg_loss:.4f}')
+
+
+
+
 if __name__ == "__main__":
-    df_train, df_nodes = data_load_in()
-    index = 0
-    graph = load_mtrx(0, MtrxType.ADJACENCY_MATRIX)
-    node_feature_mtrx = load_mtrx(0, MtrxType.NODE_FEATURE_MATRIX)
-    print(graph.shape, node_feature_mtrx.shape)
+    adjacency_matrices, node_feature_matrices, difficulties = data_loadin()
+    run_training(adjacency_matrices, node_feature_matrices, difficulties)
+    # print(difficulties[:10
+    # ])
+    model = SimpleGNN(input_dim=node_feature_matrices[0].shape[1], hidden_dim1=128, hidden_dim2=32, output_dim=1)
+    model.load_state_dict(torch.load("best_model.pt"))
+    run_inference(model, adjacency_matrices, node_feature_matrices, difficulties)
+    # model.eval()
