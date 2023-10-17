@@ -19,3 +19,7 @@ comparing them to the static landmarks of the holds `data/holds.json` gives the 
 
 ## Graph Visualization
 ![swooped](data/pngs/swooped.png) 
+
+
+### Technical Stuff 
+run `mlflow server --backend-store-uri file:///mlruns --no-serve-artifacts` 
