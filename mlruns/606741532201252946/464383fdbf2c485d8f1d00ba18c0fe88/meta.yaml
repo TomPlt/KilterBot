@@ -1,0 +1,15 @@
+artifact_uri: file:///home/tomplt/Projects/kilter/mlruns/606741532201252946/464383fdbf2c485d8f1d00ba18c0fe88/artifacts
+end_time: 1697566624069
+entry_point_name: ''
+experiment_id: '606741532201252946'
+lifecycle_stage: active
+run_id: 464383fdbf2c485d8f1d00ba18c0fe88
+run_name: adaptable-ant-939
+run_uuid: 464383fdbf2c485d8f1d00ba18c0fe88
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1697566417552
+status: 3
+tags: []
+user_id: tomplt

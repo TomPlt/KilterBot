@@ -2,3 +2,4 @@ app/*
 kilterproblems/kilterproblems
 todo.txt
 __pycache__/
+mlruns/ 

@@ -1,3 +1,4 @@
+import mlflow
 import networkx as nx
 from scipy.sparse import csr_matrix
 import ast
@@ -6,16 +7,16 @@ from tqdm import tqdm
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.sparse import csr_matrix, save_npz, load_npz
+from sklearn.model_selection import train_test_split
 from enum import Enum
 
 from tqdm import tqdm
 import torch
+import torch.nn.init as init
 from torch_geometric.data import Data
-import torch
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, global_mean_pool
+from torch_geometric.nn import GCNConv, GATConv, global_mean_pool
 from torch_geometric.data import Data
-
 
 class MtrxType(Enum):
     ADJACENCY_MATRIX = 0
@@ -169,90 +170,11 @@ def adjacency_to_edge_index(adjacency_matrix):
     edge_index = np.stack((src, dst), axis=0)
     return torch.tensor(edge_index, dtype=torch.long)
 
-import torch
-import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, global_mean_pool
-
-class SimpleGNN(torch.nn.Module):
-    def __init__(self, input_dim, hidden_dim1, hidden_dim2, output_dim):
-        super(SimpleGNN, self).__init__()
-        self.conv1 = GCNConv(input_dim, hidden_dim1)  # First convolutional layer
-        self.conv2 = GCNConv(hidden_dim1, hidden_dim2)  # New second convolutional layer
-        self.conv3 = GCNConv(hidden_dim2, output_dim)  # Third convolutional layer, previously the second
-        self.lin = torch.nn.Linear(output_dim, 1)  # Linear layer remains unchanged
-
-    def forward(self, data):
-        x, edge_index = data.x, data.edge_index
-
-        # Apply first convolutional layer
-        x = self.conv1(x, edge_index)
-        x = F.relu(x)
-        x = F.dropout(x, training=self.training, p=0.2)
-
-        # Apply new second convolutional layer
-        x = self.conv2(x, edge_index)
-        x = F.relu(x)
-        x = F.dropout(x, training=self.training, p=0.2)
-
-        # Apply third convolutional layer
-        x = self.conv3(x, edge_index)
-        x = F.relu(x)
-        x = F.dropout(x, training=self.training, p=0.2)
-
-        # Global mean pooling and linear layer
-        x = global_mean_pool(x, data.batch)  # Ensure 'data.batch' is provided
-        x = self.lin(x)
-
-        return x
-
-
-def train(data, model, optimizer, criterion):
-    model.train()
-    optimizer.zero_grad()
-    out = model(data)
-    loss = criterion(out, data.y)
-    loss.backward()
-    optimizer.step()
-    return loss.item()
-
-
-
-def run_training(adjacency_matrices, node_feature_matrices, difficulties, num_epochs=100, save_path='best_model.pt'):
-    model = SimpleGNN(input_dim=node_feature_matrices[0].shape[1], hidden_dim1=128, hidden_dim2=32, output_dim=1)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-    criterion = torch.nn.MSELoss()  
-
-    best_loss = float('inf')  # Initialize best loss as infinity
-    print("Training...")
-    for epoch in tqdm(range(num_epochs)):
-        total_loss = 0.0
-        for i in range(len(difficulties)):
-            # Converting sparse matrix to edge_index
-            edge_index = adjacency_to_edge_index(adjacency_matrices[i].todense())
-            x = torch.tensor(node_feature_matrices[i].todense(), dtype=torch.float)
-            y = torch.tensor([difficulties[i]], dtype=torch.float)  
-            data = Data(x=x, edge_index=edge_index, y=y)
-            
-            model.train()
-            optimizer.zero_grad()
-            out = model(data)
-            loss = criterion(out, data.y.unsqueeze(-1))
-            loss.backward()
-            optimizer.step()
-            total_loss += loss.item()
-        
-        avg_loss = total_loss / len(difficulties)
-        print(f'Epoch: {epoch}, Loss: {avg_loss:.4f}')
-
-        # Checkpointing
-        if avg_loss < best_loss:
-            best_loss = avg_loss
-            torch.save(model.state_dict(), save_path)
-            print(f"Model saved with loss: {best_loss:.4f}")
-
-    # Load best model
-    model.load_state_dict(torch.load(save_path))
-    return model
+def convert_to_categorical(difficulties, min_difficulty, max_difficulty, num_classes):
+    difficulty_range = np.linspace(min_difficulty, max_difficulty, num_classes + 1)
+    categories = np.digitize(difficulties, bins=difficulty_range, right=True) 
+    categories = np.where(categories == num_classes, num_classes - 1, categories)
+    return categories
 
 def run_inference(model, adjacency_matrices, node_feature_matrices, difficulties):
     model.eval()
@@ -271,15 +193,128 @@ def run_inference(model, adjacency_matrices, node_feature_matrices, difficulties
     avg_loss = total_loss / len(difficulties)
     print(f'Loss: {avg_loss:.4f}')
 
+class SimpleGNN(torch.nn.Module):
+    def __init__(self, input_dim, hidden_dim1, hidden_dim2, num_classes):  # 'num_classes' is the number of classes you're predicting
+        super(SimpleGNN, self).__init__()
+        self.conv1 = GCNConv(input_dim, hidden_dim1)  # First convolutional layer
+        self.conv2 = GCNConv(hidden_dim1, hidden_dim2)  # Second convolutional layer
+        self.lin = torch.nn.Linear(hidden_dim2, num_classes)  # A linear layer to get to the correct number of classes
 
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training, p=0.5)  # Dropout for regularization
+        x = self.conv2(x, edge_index)
+        x = F.relu(x)
+        # Global pooling - aggregates node features into graph features
+        x = global_mean_pool(x, data.batch)  # If using DataLoader, data.batch indicates to which graph a node belongs
+        # Final linear layer - it uses the graph features to make a prediction
+        x = self.lin(x)  # No softmax here as we output raw logits
+        return x
+
+def train(data, model, optimizer, criterion):
+    model.train()
+    optimizer.zero_grad()
+    out = model(data).squeeze(-1)  
+    loss = criterion(out, data.y)
+    loss.backward()
+    optimizer.step()
+    return loss.item()
+
+def evaluate(data, model, criterion):
+    model.eval()
+    with torch.no_grad():
+        predictions = model(data)
+        predictions = predictions.squeeze(-1)  
+        loss = criterion(predictions, data.y)
+    return loss.item()
+
+def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, difficulties, num_epochs=20, save_path='best_model.pt'):
+    mlflow.set_experiment("GNN_Training_Results")
+
+    with mlflow.start_run():
+        # Log parameters
+        mlflow.log_param("num_epochs", num_epochs)
+        mlflow.log_param("learning_rate", 0.005) 
+        # Split data into training and testing sets
+        num_classes = 20  # for example, if you have 20 classes
+        difficulties = convert_to_categorical(difficulties, min_difficulty=10.0, max_difficulty=29.0, num_classes=num_classes)
+        train_adj_matrices, test_adj_matrices, train_node_features, test_node_features, train_difficulties, test_difficulties = train_test_split(
+            adjacency_matrices, node_feature_matrices, difficulties, test_size=0.1, random_state=1)
+        # Initialize model, optimizer, and loss function
+        model = SimpleGNN(input_dim=node_feature_matrices[0].shape[1], hidden_dim1=256, hidden_dim2=64, num_classes=num_classes)  # Ensure correct 'num_classes'
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
+        criterion = torch.nn.CrossEntropyLoss()  
+
+        best_val_loss = float('inf')
+        val_loss_list = []
+        train_loss_list = []
+        accuracy_list = []
+        print("Training...")
+
+        for epoch in tqdm(range(num_epochs)):
+                total_train_loss = 0.0
+                correct_train_predictions = 0
+                model.train()
+                for i in range(len(train_difficulties)):
+                    edge_index = adjacency_to_edge_index(train_adj_matrices[i].todense())
+                    x = torch.tensor(train_node_features[i].todense(), dtype=torch.float)
+                    y = torch.tensor([train_difficulties[i]], dtype=torch.long)
+                    data = Data(x=x, edge_index=edge_index, y=y)
+
+                    optimizer.zero_grad()
+                    out = model(data)  
+                    loss = criterion(out, y)  
+                    loss.backward()
+                    optimizer.step()
+                    total_train_loss += loss.item()
+                    _, predicted = torch.max(out, 1)  
+                    correct_train_predictions += (predicted == y).sum().item()  # Compare with ground truth
+
+                avg_train_loss = total_train_loss / len(train_difficulties)
+                train_accuracy = correct_train_predictions / len(train_difficulties)  # Calculate training accuracy
+                total_val_loss = 0.0
+                correct_val_predictions = 0
+                model.eval()
+                for i in range(len(test_difficulties)):
+                    edge_index = adjacency_to_edge_index(test_adj_matrices[i].todense())
+                    x = torch.tensor(test_node_features[i].todense(), dtype=torch.float)
+                    y = torch.tensor([test_difficulties[i]], dtype=torch.long)
+                    data = Data(x=x, edge_index=edge_index, y=y)
+                    out = model(data)  
+                    loss = criterion(out, y)
+                    total_val_loss += loss.item()
+                    _, predicted = torch.max(out, 1) 
+                    correct_val_predictions += (predicted == y).sum().item()  # Compare with ground trut
+                avg_val_loss = total_val_loss / len(test_difficulties)
+                val_accuracy = correct_val_predictions / len(test_difficulties)
+
+                print(f'Epoch: {epoch}, Training Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}, Training Accuracy: {train_accuracy:.4f}, Validation Accuracy: {val_accuracy:.4f}')
+                # Log metrics for this epoch with MLflow
+                mlflow.log_metric("train_loss", avg_train_loss, step=epoch)
+                mlflow.log_metric("train_accuracy", train_accuracy, step=epoch)
+                mlflow.log_metric("val_loss", avg_val_loss, step=epoch)
+                mlflow.log_metric("val_accuracy", val_accuracy, step=epoch)
+                # Saving the best model based on validation loss
+                if avg_val_loss < best_val_loss:
+                    best_val_loss = avg_val_loss
+                    torch.save(model.state_dict(), save_path)
+                    print(f"Best model saved with validation loss: {best_val_loss:.4f}")
+
+                # Append statistics for later analysis
+                train_loss_list.append(avg_train_loss)
+                val_loss_list.append(avg_val_loss)
+                accuracy_list.append(val_accuracy)  # Track validation accuracy per epoch
+        mlflow.end_run()
+        
+    model.load_state_dict(torch.load(save_path))
+    return model, val_loss_list, train_loss_list
 
 
 if __name__ == "__main__":
     adjacency_matrices, node_feature_matrices, difficulties = data_loadin()
-    run_training(adjacency_matrices, node_feature_matrices, difficulties)
-    # print(difficulties[:10
-    # ])
-    model = SimpleGNN(input_dim=node_feature_matrices[0].shape[1], hidden_dim1=128, hidden_dim2=32, output_dim=1)
-    model.load_state_dict(torch.load("best_model.pt"))
-    run_inference(model, adjacency_matrices, node_feature_matrices, difficulties)
-    # model.eval()
+    model, val_loss, train_loss = run_training_and_evaluation(adjacency_matrices, node_feature_matrices, difficulties)
+    # print(val_loss)
+    # difficulty_categories = convert_to_categorical(difficulties, difficulties.min(), difficulties.max(), 20)
+    # print(difficulty_categories.min(), difficulty_categories.max())

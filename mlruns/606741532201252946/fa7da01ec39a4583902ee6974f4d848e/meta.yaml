@@ -1,0 +1,15 @@
+artifact_uri: file:///home/tomplt/Projects/kilter/mlruns/606741532201252946/fa7da01ec39a4583902ee6974f4d848e/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '606741532201252946'
+lifecycle_stage: active
+run_id: fa7da01ec39a4583902ee6974f4d848e
+run_name: valuable-bat-297
+run_uuid: fa7da01ec39a4583902ee6974f4d848e
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1697566776197
+status: 1
+tags: []
+user_id: tomplt
