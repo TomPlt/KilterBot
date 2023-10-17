@@ -236,15 +236,15 @@ def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, diffi
     with mlflow.start_run():
         # Log parameters
         mlflow.log_param("num_epochs", num_epochs)
-        mlflow.log_param("learning_rate", 0.005) 
+        mlflow.log_param("learning_rate", 0.01) 
         # Split data into training and testing sets
         num_classes = 20  # for example, if you have 20 classes
         difficulties = convert_to_categorical(difficulties, min_difficulty=10.0, max_difficulty=29.0, num_classes=num_classes)
         train_adj_matrices, test_adj_matrices, train_node_features, test_node_features, train_difficulties, test_difficulties = train_test_split(
-            adjacency_matrices, node_feature_matrices, difficulties, test_size=0.1, random_state=1)
+            adjacency_matrices, node_feature_matrices, difficulties, test_size=0.1, random_state=1, stratify=difficulties)
         # Initialize model, optimizer, and loss function
         model = SimpleGNN(input_dim=node_feature_matrices[0].shape[1], hidden_dim1=256, hidden_dim2=64, num_classes=num_classes)  # Ensure correct 'num_classes'
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         criterion = torch.nn.CrossEntropyLoss()  
 
         best_val_loss = float('inf')
