@@ -230,6 +230,41 @@ def evaluate(data, model, criterion):
         loss = criterion(predictions, data.y)
     return loss.item()
 
+def adjusted_accuracy(true_labels, predicted_labels):
+    off_by_one = 0
+    exact = 0
+    total = len(true_labels)
+
+    for true, predicted in zip(true_labels, predicted_labels):
+        if true == predicted:
+            exact += 1
+        elif abs(true - predicted) == 1:  # off by one level
+            off_by_one += 1
+
+    # you can adjust the scoring as you see fit here
+    score = (exact + 0.5 * off_by_one) / total  # giving half credit for off-by-one predictions
+    return score
+
+def ordinal_loss(outputs, targets, num_classes):
+    # Expand targets for all classes
+    expanded_targets = targets.view(-1, 1).repeat(1, num_classes)
+
+    # Create a class matrix
+    class_matrix = torch.arange(num_classes, device=outputs.device).view(1, -1).repeat(targets.size(0), 1)
+
+    # Create ordinal targets matrix
+    ordinal_targets = (class_matrix <= expanded_targets).float()
+
+    # Calculate log of probabilities
+    log_probs = F.log_softmax(outputs, dim=1)
+
+    # Calculate probabilities (you omitted this step)
+    probs = torch.exp(log_probs)  # or you can use F.softmax(outputs, dim=1) which was omitted in your code
+    ordinal_ce_loss = -torch.mean(ordinal_targets * log_probs + (1 - ordinal_targets) * torch.log(1 - probs.clamp(min=1e-5)))
+
+    return ordinal_ce_loss
+
+
 def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, difficulties, num_epochs=20, save_path='best_model.pt'):
     mlflow.set_experiment("GNN_Training_Results")
 
@@ -243,7 +278,7 @@ def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, diffi
         train_adj_matrices, test_adj_matrices, train_node_features, test_node_features, train_difficulties, test_difficulties = train_test_split(
             adjacency_matrices, node_feature_matrices, difficulties, test_size=0.1, random_state=1, stratify=difficulties)
         # Initialize model, optimizer, and loss function
-        model = SimpleGNN(input_dim=node_feature_matrices[0].shape[1], hidden_dim1=256, hidden_dim2=64, num_classes=num_classes)  # Ensure correct 'num_classes'
+        model = SimpleGNN(input_dim=node_feature_matrices[0].shape[1], hidden_dim1=128, hidden_dim2=32, num_classes=num_classes)  # Ensure correct 'num_classes'
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         criterion = torch.nn.CrossEntropyLoss()  
 
@@ -256,6 +291,8 @@ def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, diffi
         for epoch in tqdm(range(num_epochs)):
                 total_train_loss = 0.0
                 correct_train_predictions = 0
+                predicted_labels = []
+                true_labels = []
                 model.train()
                 for i in range(len(train_difficulties)):
                     edge_index = adjacency_to_edge_index(train_adj_matrices[i].todense())
@@ -265,7 +302,7 @@ def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, diffi
 
                     optimizer.zero_grad()
                     out = model(data)  
-                    loss = criterion(out, y)  
+                    loss = criterion(out, y)
                     loss.backward()
                     optimizer.step()
                     total_train_loss += loss.item()
@@ -285,12 +322,14 @@ def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, diffi
                     out = model(data)  
                     loss = criterion(out, y)
                     total_val_loss += loss.item()
-                    _, predicted = torch.max(out, 1) 
-                    correct_val_predictions += (predicted == y).sum().item()  # Compare with ground trut
+                    _, predicted = torch.max(out, 1)
+                    predicted_labels.append(predicted.item())
+                    true_labels.append(test_difficulties[i])
                 avg_val_loss = total_val_loss / len(test_difficulties)
                 val_accuracy = correct_val_predictions / len(test_difficulties)
+                adj_accuracy = adjusted_accuracy(true_labels, predicted_labels)
 
-                print(f'Epoch: {epoch}, Training Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}, Training Accuracy: {train_accuracy:.4f}, Validation Accuracy: {val_accuracy:.4f}')
+                print(f'Epoch: {epoch}, Training Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}, Training Accuracy: {train_accuracy:.4f}, Validation Accuracy: {adj_accuracy:.4f}')
                 # Log metrics for this epoch with MLflow
                 mlflow.log_metric("train_loss", avg_train_loss, step=epoch)
                 mlflow.log_metric("train_accuracy", train_accuracy, step=epoch)
