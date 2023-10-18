@@ -196,21 +196,32 @@ def run_inference(model, adjacency_matrices, node_feature_matrices, difficulties
 class SimpleGNN(torch.nn.Module):
     def __init__(self, input_dim, hidden_dim1, hidden_dim2):
         super(SimpleGNN, self).__init__()
+        
+        # Using an attention-based layer like GAT instead of simple GCN might help capture more complex relationships.
         self.conv1 = GCNConv(input_dim, hidden_dim1)
-        self.conv2 = GCNConv(hidden_dim1, hidden_dim2)
-        self.lin = torch.nn.Linear(hidden_dim2, 1)  # Changed from 'num_classes' to predict a single value
+        self.conv2 = GATConv(hidden_dim1, hidden_dim2)
+        
+        # Additional layers might help learn more complex representations
+        self.lin1 = torch.nn.Linear(hidden_dim2, 1)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
+        
+        # GAT layer
         x = self.conv1(x, edge_index)
-        x = F.relu(x)
+        x = F.leaky_relu(x)  # LeakyReLU can sometimes help prevent "dying ReLU" problems
         x = F.dropout(x, training=self.training, p=0.5)
+        
+        # Another GAT layer for deeper learning
         x = self.conv2(x, edge_index)
-        x = F.relu(x)
+        x = F.leaky_relu(x)
         x = global_mean_pool(x, data.batch)
-        x = self.lin(x)
-        return x  # No softmax for regression
-
+        
+        # More fully connected layers for learning representations beyond just the GAT outputs.
+        x = self.lin1(x)
+       
+        # For regression, we don't need a final activation function like softmax/log_softmax
+        return x
 def train(data, model, optimizer, criterion):
     model.train()
     optimizer.zero_grad()
@@ -229,20 +240,20 @@ def evaluate(data, model, criterion):
     return loss.item()
 
 
-def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, difficulties, num_epochs=50, save_path='best_model.pt'):
+def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, difficulties, num_epochs=50, lr = 0.005, save_path='best_model.pt'):
     mlflow.set_experiment("GNN_Training_Results")
 
     with mlflow.start_run():
         # Log parameters
         mlflow.log_param("num_epochs", num_epochs)
-        mlflow.log_param("learning_rate", 0.01) 
+        mlflow.log_param("learning_rate", lr) 
         # Split data into training and testing sets
         train_adj_matrices, test_adj_matrices, train_node_features, test_node_features, train_difficulties, test_difficulties = train_test_split(
             adjacency_matrices, node_feature_matrices, difficulties, test_size=0.2, random_state=1)
 
         # Initialize model, optimizer, and loss function
-        model = SimpleGNN(input_dim=node_feature_matrices[0].shape[1], hidden_dim1=256, hidden_dim2=64)
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
+        model = SimpleGNN(input_dim=node_feature_matrices[0].shape[1], hidden_dim1=256, hidden_dim2=128)
+        optimizer = torch.optim.Adam(model.parameters(), lr)
         criterion = torch.nn.MSELoss()  # Mean Squared Error for regression
 
         best_val_loss = float('inf')
@@ -258,7 +269,6 @@ def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, diffi
                     x = torch.tensor(train_node_features[i].todense(), dtype=torch.float)
                     y = torch.tensor([train_difficulties[i]], dtype=torch.float)
                     data = Data(x=x, edge_index=edge_index, y=y)
-
                     optimizer.zero_grad()
                     out = model(data).squeeze(-1)
                     loss = criterion(out, y)
