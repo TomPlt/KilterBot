@@ -17,9 +17,16 @@ comparing them to the static landmarks of the holds `data/holds.json` gives the 
 ## Mapping Landmarks to Kilterholds 
 ![climber](data/pngs/hold_matching.png) <br>
 
-## Graph Visualization
+## Graph Visualizations
+Different approaches of constructing graphs are tested. <br> 
+1. Simply connecting the nearest neighbors <br>
 ![swooped](data/pngs/swooped.png) <br>
-after using lm detection we can represent the graph differently, which directly relates moves to edges of the graph <br>
-![Alt text](data/pngs/lm_graph.png)
-### Technical Stuff 
-run `mlflow server --backend-store-uri file:///mlruns --no-serve-artifacts` 
+2. Using landmark detection matching the path of the hands directly relating hand moves to edges of the graph <br>
+![Alt text](data/pngs/lm_graph.png)  <br>
+
+## Synthetic Data 
+Eventhough this climb doesnt exist, we will mirror every climb as the difficulty would remain the same and we have more data for our model 
+![Alt text](data/pngs/mirroredswooped.png)
+
+### GNN Training Results  
+run `mlflow ui` 
