@@ -18,8 +18,8 @@ comparing them to the static landmarks of the holds `data/holds.json` gives the 
 ![climber](data/pngs/hold_matching.png) <br>
 
 ## Graph Visualization
-![swooped](data/pngs/swooped.png) 
-
-
+![swooped](data/pngs/swooped.png) <br>
+after using lm detection we can represent the graph differently, which directly relates moves to edges of the graph <br>
+![Alt text](data/pngs/lm_graph.png)
 ### Technical Stuff 
 run `mlflow server --backend-store-uri file:///mlruns --no-serve-artifacts` 
