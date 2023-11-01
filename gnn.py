@@ -92,22 +92,6 @@ def build_sparse_matrix(df_nodes, nodes_list, hold_types):
     matrix[np.isnan(matrix)] = 0
     return csr_matrix(matrix)
 
-def visualize_graph(graphs: list, index):
-    G = graphs[index]
-
-    pos = nx.get_node_attributes(G, 'coordinates')
-
-    nx.draw(G, pos, with_labels=True, node_size=700, node_color='skyblue', font_size=15, font_weight='bold')
-    for node, attrs in G.nodes(data=True):
-        # Creating a string of features for demonstration. 
-        # Adjust accordingly to your use case.
-        s = f"hold_variant: {attrs['hold_variant']}\n" + \
-            "\n".join([f"{key}: {value}" for key, value in attrs.items() if key not in ['coordinates', 'hold_variant']])
-        
-        plt.annotate(s, (pos[node][0],pos[node][1]), textcoords="offset points", xytext=(0,10), ha='center', fontsize=8, color='red')
-
-    plt.title('Graph Visualization with Features')
-    plt.show()
 
 def graph_preprocessing():
     df_train, df_nodes = pd.read_csv('data/csvs/train.csv'), pd.read_csv('data/csvs/nodes.csv')
@@ -116,12 +100,12 @@ def graph_preprocessing():
     df_nodes.screw_angle /= 360
     df_nodes.x /= df_nodes.x.max()
     df_nodes.y /= df_nodes.y.max()
-    hold_type_columns = [
-    'hold_type_Foot Only', 
-    'hold_type_Middle', 
-    'hold_type_Finish', 
-    'hold_type_Start'
-    ]
+    # hold_type_columns = [
+    # 'hold_type_Foot Only', 
+    # 'hold_type_Middle', 
+    # 'hold_type_Finish', 
+    # 'hold_type_Start'
+    # ]
     for index, row in tqdm(df_train.iterrows()):
         nodes_list = ast.literal_eval(row['nodes'])
         hold_types = ast.literal_eval(row['hold_type'])
@@ -156,7 +140,7 @@ def sparse_to_torch_tensor(sparse_matrix):
 
 def data_loadin():
     df_train, df_nodes = pd.read_csv('data/csvs/train.csv'), pd.read_csv('data/csvs/nodes.csv')
-    difficulties = df_train.difficulty.to_numpy()
+    difficulties = df_train.difficulty.to_numpy()[:1512]
     adjacency_matrices = []
     node_feature_matrices = []
     print("Loading matrices...")
@@ -252,7 +236,11 @@ def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, diffi
             adjacency_matrices, node_feature_matrices, difficulties, test_size=0.2, random_state=1)
 
         # Initialize model, optimizer, and loss function
-        model = SimpleGNN(input_dim=node_feature_matrices[0].shape[1], hidden_dim1=256, hidden_dim2=128)
+        hidden_dim1 = 256
+        hidden_dim2 = 128
+        mlflow.log_param("hidden_dim1", hidden_dim1)
+        mlflow.log_param("hidden_dim2", hidden_dim2)
+        model = SimpleGNN(input_dim=node_feature_matrices[0].shape[1], hidden_dim1=hidden_dim1, hidden_dim2=hidden_dim2)
         optimizer = torch.optim.Adam(model.parameters(), lr)
         criterion = torch.nn.MSELoss()  # Mean Squared Error for regression
 

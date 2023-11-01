@@ -1,3 +1,4 @@
+from tqdm import tqdm 
 import json
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -6,11 +7,11 @@ import pandas as pd
 import re
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
-from gnn import visualize_graph
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans, DBSCAN
 from scipy.optimize import linear_sum_assignment
+from scipy.sparse import save_npz
 from scipy.spatial.distance import cdist
 import ast
 import sqlite3
@@ -331,10 +332,8 @@ def graphs_with_edges(index: int):
     nodes = ast.literal_eval(row['nodes'])
     hold_variants = ast.literal_eval(row['hold_type'])
     coord_dict = {node_id: coord for node_id, coord in zip(nodes, coordinates)}
-    print(df_climbs.loc[index])
     # Initialize an empty directed graph
     G = nx.DiGraph()
-    
     # Adding nodes
     for i, node_id in enumerate(nodes):
         node_features = df_nodes.loc[node_id].to_dict()
@@ -342,14 +341,12 @@ def graphs_with_edges(index: int):
         
     # Adding edges
     df_edges = get_edge_data_from_db(index)  # Assuming index matches with graph_index
-    print(df_edges)
     for _, row in df_edges.iterrows():
         G.add_edge(row['start_node'], row['end_node'])
-        
-    return G
+    adjacency_matrix = nx.adjacency_matrix(G)
+    save_npz(f"data/npzs/adjacency_mtrx/{index}.npz", adjacency_matrix)   
 
 if __name__ == "__main__":
-    index = 1500
-    G = graphs_with_edges(index)
-    print(G.edges())
-    visualize_graph([G], None)
+    index = 1511
+    for i in tqdm(range(index+1)):
+        graphs_with_edges(i)
