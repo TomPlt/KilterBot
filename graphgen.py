@@ -13,7 +13,7 @@ from sklearn.cluster import KMeans, DBSCAN
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 import ast
-
+import sqlite3
 
 # Constants
 kilter_xlim = 144
@@ -172,13 +172,19 @@ def create_graph_from_clustering(assignments, kilter_holds, right_hand_sequence,
     return G, real_pos
 
 def visualize_graph(graphs: list, index):
-    G = graphs[index]
+    if index:
+        G = graphs[index]
+    else:
+        G = graphs[0]
     pos = nx.get_node_attributes(G, 'coordinates')
+    
     nx.draw(G, pos, with_labels=True, node_size=700, node_color='skyblue', font_size=15, font_weight='bold')
+    
     for node, attrs in G.nodes(data=True):
         s = f"hold_variant: {attrs['hold_variant']}\n" + \
             "\n".join([f"{key}: {value}" for key, value in attrs.items() if key not in ['coordinates', 'hold_variant']])
         plt.annotate(s, (pos[node][0],pos[node][1]), textcoords="offset points", xytext=(0,10), ha='center', fontsize=8, color='red')
+    
     plt.title('Graph Visualization with Features')
     plt.show()
 
@@ -306,5 +312,44 @@ def process_data():
     G_mirrored = create_mirrored_graph(G)
     visualize_graph([G_mirrored], 0)
 
+# Function to get edge data from SQLite database
+def get_edge_data_from_db(graph_index):
+    # Connect to SQLite database
+    conn = sqlite3.connect('../edgeapp/edges.db')
+    # Execute query to fetch edge data for the specific graph index
+    query = f"SELECT * FROM edges WHERE graph_index = {graph_index}"
+    df_edges = pd.read_sql(query, conn)
+    conn.close()
+    return df_edges
+
+def graphs_with_edges(index: int):
+    df_train = pd.read_csv('data/csvs/train.csv')
+    df_nodes = pd.read_csv('data/csvs/nodes.csv')
+    df_climbs = pd.read_csv('data/csvs/climbs.csv')
+    row = df_train.loc[index]
+    coordinates = ast.literal_eval(row['coordinates'])
+    nodes = ast.literal_eval(row['nodes'])
+    hold_variants = ast.literal_eval(row['hold_type'])
+    coord_dict = {node_id: coord for node_id, coord in zip(nodes, coordinates)}
+    print(df_climbs.loc[index])
+    # Initialize an empty directed graph
+    G = nx.DiGraph()
+    
+    # Adding nodes
+    for i, node_id in enumerate(nodes):
+        node_features = df_nodes.loc[node_id].to_dict()
+        G.add_node(node_id, coordinates=coord_dict[node_id], hold_variant=hold_variants[i], **node_features)
+        
+    # Adding edges
+    df_edges = get_edge_data_from_db(index)  # Assuming index matches with graph_index
+    print(df_edges)
+    for _, row in df_edges.iterrows():
+        G.add_edge(row['start_node'], row['end_node'])
+        
+    return G
+
 if __name__ == "__main__":
-    process_data()
+    index = 1500
+    G = graphs_with_edges(index)
+    print(G.edges())
+    visualize_graph([G], None)

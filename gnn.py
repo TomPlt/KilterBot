@@ -26,7 +26,7 @@ def generate_graphs(use_features=False):
     # List to store generated graphs
     graphs = []
 
-    df_train, df_nodes = data_load_in()
+    df_train, df_nodes = pd.read_csv('data/csvs/train.csv'), pd.read_csv('data/csvs/nodes.csv')
 
     for index, row in df_train.iterrows():
         G = nx.Graph()  # Initialize a new graph for this row
