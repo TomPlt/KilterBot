@@ -224,7 +224,7 @@ def evaluate(data, model, criterion):
     return loss.item()
 
 
-def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, difficulties, num_epochs=100, lr=0.01, save_path='best_model.pt'):
+def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, difficulties, num_epochs=200, lr=0.01, save_path='best_model.pt'):
     mlflow.set_experiment("GNN_Training_Results")
 
     with mlflow.start_run():
