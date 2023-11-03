@@ -20,7 +20,8 @@ from torch_geometric.data import Data
 
 class MtrxType(Enum):
     ADJACENCY_MATRIX = 0
-    NODE_FEATURE_MATRIX = 1
+    MIRRORED_ADJACENCY_MATRIX = 1
+    NODE_FEATURE_MATRIX = 2
 
 def generate_graphs(use_features=False):
     # List to store generated graphs
@@ -92,7 +93,6 @@ def build_sparse_matrix(df_nodes, nodes_list, hold_types):
     matrix[np.isnan(matrix)] = 0
     return csr_matrix(matrix)
 
-
 def graph_preprocessing():
     df_train, df_nodes = pd.read_csv('data/csvs/train.csv'), pd.read_csv('data/csvs/nodes.csv')
     df_nodes = pd.get_dummies(df_nodes, columns=['sku', 'hold_type'])
@@ -128,6 +128,8 @@ def load_mtrx(index, type:MtrxType):
         return load_npz(f'data/npzs/adjacency_mtrx/{index}.npz')
     elif type == MtrxType.NODE_FEATURE_MATRIX:
         return load_npz(f'data/npzs/node_feature_mtrx/{index}.npz')
+    elif type == MtrxType.MIRRORED_ADJACENCY_MATRIX:
+        return load_npz(f'data/npzs/adjacency_mtrx/{index}_mirrored.npz')
     else:
         raise Exception('Invalid type')
 
@@ -138,16 +140,35 @@ def sparse_to_torch_tensor(sparse_matrix):
     edge_index = torch.tensor(indices, dtype=torch.long)
     return edge_index
 
+
 def data_loadin():
-    df_train, df_nodes = pd.read_csv('data/csvs/train.csv'), pd.read_csv('data/csvs/nodes.csv')
-    difficulties = df_train.difficulty.to_numpy()[:1512]
+    df_train = pd.read_csv('data/csvs/train.csv')
+    difficulties = df_train.difficulty.to_numpy()[:2000]
+    indices = np.arange(len(difficulties))
     adjacency_matrices = []
     node_feature_matrices = []
     print("Loading matrices...")
-    for i in tqdm(range(len(difficulties))):
-        adjacency_matrices.append(load_mtrx(i, MtrxType.ADJACENCY_MATRIX))
-        node_feature_matrices.append(load_mtrx(i, MtrxType.NODE_FEATURE_MATRIX))
-    return adjacency_matrices, node_feature_matrices, difficulties
+    for i in tqdm(indices):
+        try:
+            adjacency_matrices.append(load_mtrx(i, MtrxType.ADJACENCY_MATRIX))
+            node_feature_matrices.append(load_mtrx(i, MtrxType.NODE_FEATURE_MATRIX))
+
+        except FileNotFoundError:
+            print(f"File {i} not found")
+            difficulties = np.delete(difficulties, i)
+            indices = np.delete(indices, i)
+            continue    
+     
+    # Splitting the data along with indices
+    train_indices, _, train_adj_matrices, test_adj_matrices, train_node_features, test_node_features, train_difficulties, test_difficulties = train_test_split(
+        indices, adjacency_matrices, node_feature_matrices, difficulties, test_size=0.2, random_state=1)
+    
+    mirrored_adjacency_matrices = []
+    print("Loading mirrored matrices for training set...")
+    for i in tqdm(train_indices):
+        mirrored_adjacency_matrices.append(load_mtrx(i, MtrxType.ADJACENCY_MATRIX))
+
+    return node_feature_matrices, train_adj_matrices, test_adj_matrices, train_node_features, test_node_features, train_difficulties, test_difficulties, mirrored_adjacency_matrices
 
 def adjacency_to_edge_index(adjacency_matrix):
     src, dst = np.where(adjacency_matrix > 0)
@@ -206,6 +227,7 @@ class SimpleGNN(torch.nn.Module):
        
         # For regression, we don't need a final activation function like softmax/log_softmax
         return x
+
 def train(data, model, optimizer, criterion):
     model.train()
     optimizer.zero_grad()
@@ -223,8 +245,7 @@ def evaluate(data, model, criterion):
         loss = criterion(predictions, data.y)
     return loss.item()
 
-
-def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, difficulties, num_epochs=200, lr=0.01, save_path='best_model.pt'):
+def run_training_and_evaluation(num_epochs=200, lr=0.01, save_path='best_model.pt'):
     mlflow.set_experiment("GNN_Training_Results")
 
     with mlflow.start_run():
@@ -232,8 +253,7 @@ def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, diffi
         mlflow.log_param("num_epochs", num_epochs)
         mlflow.log_param("learning_rate", lr) 
         # Split data into training and testing sets
-        train_adj_matrices, test_adj_matrices, train_node_features, test_node_features, train_difficulties, test_difficulties = train_test_split(
-            adjacency_matrices, node_feature_matrices, difficulties, test_size=0.2, random_state=1)
+        node_feature_matrices, train_adj_matrices, test_adj_matrices, train_node_features, test_node_features, train_difficulties, test_difficulties, train_mirrored_adj_matrices = data_loadin()
 
         # Initialize model, optimizer, and loss function
         hidden_dim1 = 256
@@ -253,16 +273,17 @@ def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, diffi
                 total_train_loss = 0.0
                 model.train()
                 for i in range(len(train_difficulties)):
-                    edge_index = adjacency_to_edge_index(train_adj_matrices[i].todense())
-                    x = torch.tensor(train_node_features[i].todense(), dtype=torch.float)
-                    y = torch.tensor([train_difficulties[i]], dtype=torch.float)
-                    data = Data(x=x, edge_index=edge_index, y=y)
-                    optimizer.zero_grad()
-                    out = model(data).squeeze(-1)
-                    loss = criterion(out, y)
-                    loss.backward()
-                    optimizer.step()
-                    total_train_loss += loss.item()
+                    for adj_matrix in [train_adj_matrices[i], train_mirrored_adj_matrices[i]]:
+                        edge_index = adjacency_to_edge_index(adj_matrix.todense())
+                        x = torch.tensor(train_node_features[i].todense(), dtype=torch.float)
+                        y = torch.tensor([train_difficulties[i]], dtype=torch.float)
+                        data = Data(x=x, edge_index=edge_index, y=y)
+                        optimizer.zero_grad()
+                        out = model(data).squeeze(-1)
+                        loss = criterion(out, y)
+                        loss.backward()
+                        optimizer.step()
+                        total_train_loss += loss.item()
             
                 avg_train_loss = total_train_loss / len(train_difficulties)
                 total_val_loss = 0.0
@@ -298,5 +319,4 @@ def run_training_and_evaluation(adjacency_matrices, node_feature_matrices, diffi
 
 
 if __name__ == "__main__":
-    adjacency_matrices, node_feature_matrices, difficulties = data_loadin()
-    model, val_loss, train_loss = run_training_and_evaluation(adjacency_matrices, node_feature_matrices, difficulties)
+    model, val_loss, train_loss = run_training_and_evaluation()

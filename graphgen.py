@@ -327,26 +327,43 @@ def graphs_with_edges(index: int):
     df_train = pd.read_csv('data/csvs/train.csv')
     df_nodes = pd.read_csv('data/csvs/nodes.csv')
     df_climbs = pd.read_csv('data/csvs/climbs.csv')
+
     row = df_train.loc[index]
     coordinates = ast.literal_eval(row['coordinates'])
     nodes = ast.literal_eval(row['nodes'])
     hold_variants = ast.literal_eval(row['hold_type'])
+
+    if not 'Start' in hold_variants or not 'Finish' in hold_variants:
+        return
+
     coord_dict = {node_id: coord for node_id, coord in zip(nodes, coordinates)}
-    # Initialize an empty directed graph
+
     G = nx.DiGraph()
-    # Adding nodes
+
     for i, node_id in enumerate(nodes):
         node_features = df_nodes.loc[node_id].to_dict()
+        if node_id not in coord_dict:
+            print(f"Node {node_id} does not have a coordinate")
+            return
         G.add_node(node_id, coordinates=coord_dict[node_id], hold_variant=hold_variants[i], **node_features)
-        
-    # Adding edges
-    df_edges = get_edge_data_from_db(index)  # Assuming index matches with graph_index
+
+    df_edges = get_edge_data_from_db(index)
     for _, row in df_edges.iterrows():
+        if row['start_node'] not in coord_dict or row['end_node'] not in coord_dict:
+            print(f"One or more nodes in edge {row['start_node']} -> {row['end_node']} do not have coordinates.")
+            return
         G.add_edge(row['start_node'], row['end_node'])
+
     adjacency_matrix = nx.adjacency_matrix(G)
-    save_npz(f"data/npzs/adjacency_mtrx/{index}.npz", adjacency_matrix)   
+    save_npz(f"data/npzs/adjacency_mtrx/{index}.npz", adjacency_matrix) 
+    # create and save mirrored graph 
+    G_mirrored = create_mirrored_graph(G)
+    adjacency_matrix_mirrored = nx.adjacency_matrix(G_mirrored)
+    save_npz(f"data/npzs/adjacency_mtrx/{index}_mirrored.npz", adjacency_matrix_mirrored)
+    
+    return G
 
 if __name__ == "__main__":
-    index = 1511
+    index = 2000
     for i in tqdm(range(index+1)):
         graphs_with_edges(i)
