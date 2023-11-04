@@ -62,16 +62,17 @@ def generate_graphs(use_features=False):
         graphs.append(G)
     return graphs
 
+
 def build_sparse_matrix(df_nodes, nodes_list, hold_types):
     # Create a deep copy of df_nodes to modify
     temp_df = df_nodes.copy()
-    
+
+    # Initialize a new column for 'hold_type' with default 0
+    temp_df['hold_type'] = 0
+
     # Populate the 'hold_type' column with the new hold_type for this climb
     for node, hold_type in zip(nodes_list, hold_types):
-        temp_df.at[node, 'hold_type'] = hold_type
-    
-    # One-hot encode the 'hold_type' column
-    temp_df = pd.get_dummies(temp_df, columns=['hold_type'])
+        temp_df.at[node, f'hold_type_{hold_type}'] = 1
     
     # Ensure all hold_type_columns exist in the DataFrame
     hold_type_columns = [
@@ -87,34 +88,34 @@ def build_sparse_matrix(df_nodes, nodes_list, hold_types):
     # Reorder the columns to ensure the same sequence
     columns_order = [col for col in temp_df.columns if col not in hold_type_columns] + hold_type_columns
     temp_df = temp_df.reindex(columns=columns_order)
+
     # Build matrix
     matrix = np.full(temp_df.shape, np.nan)
     matrix[nodes_list] = temp_df.loc[nodes_list].values
     matrix[np.isnan(matrix)] = 0
+    
     return csr_matrix(matrix)
 
 def graph_preprocessing():
     df_train, df_nodes = pd.read_csv('data/csvs/train.csv'), pd.read_csv('data/csvs/nodes.csv')
+
+    # Normalize the screw_angle and x, y coordinates
+    df_nodes['norm_screw_angle'] = df_nodes['screw_angle'] / 360
+    df_nodes['norm_x'] = df_nodes['x'] / df_nodes['x'].max()
+    df_nodes['norm_y'] = df_nodes['y'] / df_nodes['y'].max()
     df_nodes = pd.get_dummies(df_nodes, columns=['sku', 'hold_type'])
-    df_nodes = df_nodes.drop(columns=['name'])
-    df_nodes.screw_angle /= 360
-    df_nodes.x /= df_nodes.x.max()
-    df_nodes.y /= df_nodes.y.max()
-    # hold_type_columns = [
-    # 'hold_type_Foot Only', 
-    # 'hold_type_Middle', 
-    # 'hold_type_Finish', 
-    # 'hold_type_Start'
-    # ]
+    df_nodes = df_nodes.drop(columns=['name', 'screw_angle', 'x', 'y'])
+
+    # Create interaction terms for norm_screw_angle and SKU dummies
+    for sku_col in [col for col in df_nodes.columns if col.startswith('sku_')]:
+        df_nodes[f'{sku_col}_angle_interaction'] = df_nodes[sku_col] * df_nodes['norm_screw_angle']
+
     for index, row in tqdm(df_train.iterrows()):
         nodes_list = ast.literal_eval(row['nodes'])
         hold_types = ast.literal_eval(row['hold_type'])
-        
+
         sparse_matrix = build_sparse_matrix(df_nodes, nodes_list, hold_types)
         save_npz(f'data/npzs/node_feature_mtrx/{index}.npz', sparse_matrix)
-        # print(climb_sparse_matrices[index].isna().sum())
-# print(df_nodes.head(), df_nodes.screw_angle.max())
-
 def create_adjacency_matrix(edges, dim):
     adjacency_matrix = np.zeros((dim, dim), dtype=np.int8)
     # For now undirected 
@@ -205,7 +206,7 @@ class SimpleGNN(torch.nn.Module):
         # Using an attention-based layer like GAT instead of simple GCN might help capture more complex relationships.
         self.conv1 = GCNConv(input_dim, hidden_dim1)
         self.conv2 = GATConv(hidden_dim1, hidden_dim2)
-        
+        self.conv3 = GCNConv(hidden_dim2, hidden_dim1)
         # Additional layers might help learn more complex representations
         self.lin1 = torch.nn.Linear(hidden_dim2, 1)
 
@@ -245,7 +246,7 @@ def evaluate(data, model, criterion):
         loss = criterion(predictions, data.y)
     return loss.item()
 
-def run_training_and_evaluation(num_epochs=200, lr=0.01, save_path='best_model.pt'):
+def run_training_and_evaluation(num_epochs=200, lr=0.005, save_path='best_model.pt'):
     mlflow.set_experiment("GNN_Training_Results")
 
     with mlflow.start_run():
@@ -256,13 +257,13 @@ def run_training_and_evaluation(num_epochs=200, lr=0.01, save_path='best_model.p
         node_feature_matrices, train_adj_matrices, test_adj_matrices, train_node_features, test_node_features, train_difficulties, test_difficulties, train_mirrored_adj_matrices = data_loadin()
 
         # Initialize model, optimizer, and loss function
-        hidden_dim1 = 256
+        hidden_dim1 = 512
         hidden_dim2 = 128
         mlflow.log_param("hidden_dim1", hidden_dim1)
         mlflow.log_param("hidden_dim2", hidden_dim2)
         model = SimpleGNN(input_dim=node_feature_matrices[0].shape[1], hidden_dim1=hidden_dim1, hidden_dim2=hidden_dim2)
         optimizer = torch.optim.Adam(model.parameters(), lr)
-        criterion = torch.nn.MSELoss()  # Mean Squared Error for regression
+        criterion = torch.nn.MSELoss()   # Mean Squared Error for regression
 
         best_val_loss = float('inf')
         val_loss_list = []
@@ -273,7 +274,7 @@ def run_training_and_evaluation(num_epochs=200, lr=0.01, save_path='best_model.p
                 total_train_loss = 0.0
                 model.train()
                 for i in range(len(train_difficulties)):
-                    for adj_matrix in [train_adj_matrices[i], train_mirrored_adj_matrices[i]]:
+                    for adj_matrix in [train_adj_matrices[i]]:
                         edge_index = adjacency_to_edge_index(adj_matrix.todense())
                         x = torch.tensor(train_node_features[i].todense(), dtype=torch.float)
                         y = torch.tensor([train_difficulties[i]], dtype=torch.float)
@@ -319,4 +320,5 @@ def run_training_and_evaluation(num_epochs=200, lr=0.01, save_path='best_model.p
 
 
 if __name__ == "__main__":
+    graph_preprocessing()
     model, val_loss, train_loss = run_training_and_evaluation()
