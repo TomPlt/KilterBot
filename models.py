@@ -4,6 +4,7 @@ from torch_geometric.nn import GCNConv, ChebConv, GATConv, global_mean_pool, Top
 from torch_geometric.utils import to_dense_adj, dense_to_sparse
 from torch_geometric.data import Data
 from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence, pad_packed_sequence
+from torch_geometric.utils import get_laplacian
 
 class SimpleGNN(torch.nn.Module):
     def __init__(self, input_dim, hidden_dim1, hidden_dim2):
@@ -13,11 +14,13 @@ class SimpleGNN(torch.nn.Module):
         self.lin1 = torch.nn.Linear(hidden_dim2, 1)
 
     def forward(self, data):
-        x, edge_index = data.x, data.edge_index
-        x = self.conv1(x, edge_index)
+        x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
+        print(x.shape, edge_index, edge_attr)
+        exit()
+        x = self.conv1(x, edge_index, edge_attr)
         x = F.relu(x)  
         x = F.dropout(x, training=self.training, p=0.35)
-        x = self.conv2(x, edge_index)
+        x = self.conv2(x, edge_index, edge_attr)
         x = F.relu(x)
         x = global_mean_pool(x, data.batch)
         x = self.lin1(x)

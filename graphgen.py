@@ -15,6 +15,9 @@ from scipy.sparse import save_npz
 from scipy.spatial.distance import cdist
 import ast
 import sqlite3
+import torch
+from scipy.sparse import csr_matrix
+
 
 # Constants
 kilter_xlim = 144
@@ -323,47 +326,96 @@ def get_edge_data_from_db(graph_index):
     conn.close()
     return df_edges
 
-def graphs_with_edges(index: int):
+def verify_features(nodes, df_nodes):
+    feature_keys = set(df_nodes.columns)  # Assuming df_nodes has consistent columns
+    for node in nodes:
+        node_features = set(df_nodes.loc[node].to_dict().keys())
+        if feature_keys != node_features:
+            missing = feature_keys - node_features
+            extra = node_features - feature_keys
+            return node, missing, extra
+    return None, None, None
+
+def build_and_save_graphs_with_features(index: int):
     df_train = pd.read_csv('data/csvs/train.csv')
     df_nodes = pd.read_csv('data/csvs/nodes.csv')
-    df_climbs = pd.read_csv('data/csvs/climbs.csv')
+    # Normalize the screw_angle and x, y coordinates
+    df_nodes['norm_screw_angle'] = df_nodes['screw_angle'] / 360
+    df_nodes['norm_x'] = df_nodes['x'] / df_nodes['x'].max()
+    df_nodes['norm_y'] = df_nodes['y'] / df_nodes['y'].max()
+    df_nodes = pd.get_dummies(df_nodes, columns=['sku', 'hold_type'])
+    df_nodes.drop(columns=['name', 'screw_angle', 'x', 'y'], inplace=True)
+    # df_train = pd.get_dummies(df_train, columns=['hold_type'])
 
+    # Ensure all hold_type_columns exist in the DataFrame
+    hold_type_columns = [
+        'hold_type_Start',
+        'hold_type_Middle', 
+        'hold_type_Finish', 
+        'hold_type_Foot Only', 
+    ]
+    for col in hold_type_columns:
+        if col not in df_train.columns:
+            df_train[col] = 0
+
+   
+    # Create interaction terms for norm_screw_angle and SKU dummies
+    for sku_col in [col for col in df_nodes.columns if col.startswith('sku_')]:
+        df_nodes[f'{sku_col}_angle_interaction'] = df_nodes[sku_col] * df_nodes['norm_screw_angle']
+    
     row = df_train.loc[index]
+    climbs = pd.read_csv('data/csvs/climbs.csv')
     coordinates = ast.literal_eval(row['coordinates'])
     nodes = ast.literal_eval(row['nodes'])
     hold_variants = ast.literal_eval(row['hold_type'])
-
-    if not 'Start' in hold_variants or not 'Finish' in hold_variants:
+    map_hold_vars = {'Start': 0, 'Middle': 1, 'Finish': 2, 'Foot Only': 3}
+    if not any(map_hold_vars[i] in [0, 2] for i in hold_variants):
         return
-
-    coord_dict = {node_id: coord for node_id, coord in zip(nodes, coordinates)}
-
+    hold_vars_list = [map_hold_vars[i] for i in hold_variants]
+    coord_dict = {node: coord for node, coord in zip(nodes, coordinates)}
     G = nx.DiGraph()
+    assert len(nodes) == len(hold_vars_list)
+    assert len(nodes) == len(coordinates)
+    for i, node in enumerate(nodes):
+        node_features = df_nodes.loc[node]
+        G.add_node(node, coordinates=coord_dict[node], hold_variant=hold_vars_list[i], **node_features)
 
-    for i, node_id in enumerate(nodes):
-        node_features = df_nodes.loc[node_id].to_dict()
-        if node_id not in coord_dict:
-            print(f"Node {node_id} does not have a coordinate")
-            return
-        G.add_node(node_id, coordinates=coord_dict[node_id], hold_variant=hold_variants[i], **node_features)
-
+    # Assuming get_edge_data_from_db(index) is a function you've defined to get the edge data
     df_edges = get_edge_data_from_db(index)
-    for _, row in df_edges.iterrows():
-        if row['start_node'] not in coord_dict or row['end_node'] not in coord_dict:
-            print(f"One or more nodes in edge {row['start_node']} -> {row['end_node']} do not have coordinates.")
-            return
-        G.add_edge(row['start_node'], row['end_node'])
+    df_edges = df_edges.sort_values(by='edge_index')
 
+    for _, edge_row in df_edges.iterrows():
+        G.add_edge(edge_row['start_node'], edge_row['end_node'])
+    # print(len(G.nodes))
     adjacency_matrix = nx.adjacency_matrix(G)
-    save_npz(f"data/npzs/adjacency_mtrx/{index}.npz", adjacency_matrix) 
-    # create and save mirrored graph 
-    G_mirrored = create_mirrored_graph(G)
-    adjacency_matrix_mirrored = nx.adjacency_matrix(G_mirrored)
-    save_npz(f"data/npzs/adjacency_mtrx/{index}_mirrored.npz", adjacency_matrix_mirrored)
-    
+    save_npz(f"data/npzs/adjacency_mtrx/{index}.npz", adjacency_matrix)
+    features_list = []
+    for node in G.nodes(data=True):
+        # print(node, list(node[1].values())[-3:])
+        features_list.append(list(node[1].values())[1:])
+        # Ensure all nodes have the same feature size
+        if len(features_list[-1]) != len(features_list[0]):
+            raise ValueError(f"Node {node} has a different number of features.")
+    try:
+        node_feature_array = np.array(features_list)
+    except ValueError as e:
+        # If this raises an error, it helps identify the problematic node
+        print(f"Error constructing feature array: {e}")
+        raise
+
+    node_feature_matrix = csr_matrix(node_feature_array)
+    save_npz(f"data/npzs/node_feature_mtrx/{index}.npz", node_feature_matrix)
+
+
+    # Map nodes to indices based on the order they were added to G for edge_index_tensor
+    node_to_idx = {node: i for i, node in enumerate(G.nodes())}
+    edge_index_list = [(node_to_idx[start], node_to_idx[end]) for start, end in G.edges()]
+    edge_index_tensor = torch.tensor(edge_index_list, dtype=torch.long)
+    torch.save(edge_index_tensor, f"data/tensors/edge_index_{index}.pt")
+
     return G
 
 if __name__ == "__main__":
-    index = 2000
+    index = 1000
     for i in tqdm(range(index+1)):
-        graphs_with_edges(i)
+        build_and_save_graphs_with_features(6)

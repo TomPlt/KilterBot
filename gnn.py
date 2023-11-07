@@ -17,10 +17,11 @@ from torch_geometric.data import Data
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, GATConv, global_mean_pool
 from torch_geometric.data import Data
+from models import *
 
 class MtrxType(Enum):
     ADJACENCY_MATRIX = 0
-    MIRRORED_ADJACENCY_MATRIX = 1
+    EDGE_SEQUENCE = 1
     NODE_FEATURE_MATRIX = 2
 
 def generate_graphs(use_features=False):
@@ -128,8 +129,10 @@ def load_mtrx(index, type:MtrxType):
         return load_npz(f'data/npzs/adjacency_mtrx/{index}.npz')
     elif type == MtrxType.NODE_FEATURE_MATRIX:
         return load_npz(f'data/npzs/node_feature_mtrx/{index}.npz')
-    elif type == MtrxType.MIRRORED_ADJACENCY_MATRIX:
-        return load_npz(f'data/npzs/adjacency_mtrx/{index}_mirrored.npz')
+    elif type == MtrxType.EDGE_SEQUENCE:
+        return torch.load(f'data/tensors/edge_sequence_{index}.pt')
+    # elif type == MtrxType.MIRRORED_ADJACENCY_MATRIX:
+    #     return load_npz(f'data/npzs/adjacency_mtrx/{index}_mirrored.npz')
     else:
         raise Exception('Invalid type')
 
@@ -139,41 +142,65 @@ def sparse_to_torch_tensor(sparse_matrix):
     indices = np.vstack((coo_matrix.row, coo_matrix.col))
     edge_index = torch.tensor(indices, dtype=torch.long)
     return edge_index
-
-
-def data_loadin():
+def data_loading():
     df_train = pd.read_csv('data/csvs/train.csv')
-    difficulties = df_train.difficulty.to_numpy()[:2000]
+    difficulties = df_train['difficulty'].to_numpy()[:1000]
     indices = np.arange(len(difficulties))
-    adjacency_matrices = []
-    node_feature_matrices = []
-    print("Loading matrices...")
-    for i in tqdm(indices):
+    adjacency_matrices = []  # This will hold the adjacency matrices
+    node_feature_matrices = []  # This will hold the node feature matrices
+    edge_sequence_list = []  # This will hold the edge sequences
+    print("Loading data...")
+    for i in indices:
         try:
+            edge_sequence_tensor = torch.load(f"data/tensors/edge_sequence_{i}.pt")
+            edge_sequence_list.append(edge_sequence_tensor)
             adjacency_matrices.append(load_mtrx(i, MtrxType.ADJACENCY_MATRIX))
             node_feature_matrices.append(load_mtrx(i, MtrxType.NODE_FEATURE_MATRIX))
+            # Load edge sequence tensors
+        except FileNotFoundError as e:
+            print(f"Data for index {i} not found: {e}")
+            difficulties = np.delete(difficulties, np.argwhere(indices == i))
+            indices = np.delete(indices, np.argwhere(indices == i))
+            continue
+    # Splitting the data
+    # print(difficulties)
+    train_indices, test_indices = train_test_split(
+        range(len(indices)), test_size=0.2, random_state=1
+    )
+    # print(indices)
 
-        except FileNotFoundError:
-            print(f"File {i} not found")
-            difficulties = np.delete(difficulties, i)
-            indices = np.delete(indices, i)
-            continue    
-     
-    # Splitting the data along with indices
-    train_indices, _, train_adj_matrices, test_adj_matrices, train_node_features, test_node_features, train_difficulties, test_difficulties = train_test_split(
-        indices, adjacency_matrices, node_feature_matrices, difficulties, test_size=0.2, random_state=1)
-    
-    mirrored_adjacency_matrices = []
-    print("Loading mirrored matrices for training set...")
-    for i in tqdm(train_indices):
-        mirrored_adjacency_matrices.append(load_mtrx(i, MtrxType.ADJACENCY_MATRIX))
-
-    return node_feature_matrices, train_adj_matrices, test_adj_matrices, train_node_features, test_node_features, train_difficulties, test_difficulties, mirrored_adjacency_matrices
+    def generate_data_list(indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, difficulties):
+        data_list = []
+        for idx in indices:
+            edge_index = adjacency_to_edge_index(adjacency_matrices[idx].todense())
+            edge_attr = edge_sequence_list[idx]
+            x = torch.tensor(node_feature_matrices[idx].todense(), dtype=torch.float)
+            y = torch.tensor([difficulties[idx]], dtype=torch.float)
+            data_object = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y)
+            data_list.append(data_object)
+        return data_list
+    train_data_list = generate_data_list(train_indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, difficulties)
+    test_data_list = generate_data_list(test_indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, difficulties)
+    return train_data_list, test_data_list
 
 def adjacency_to_edge_index(adjacency_matrix):
     src, dst = np.where(adjacency_matrix > 0)
     edge_index = np.stack((src, dst), axis=0)
     return torch.tensor(edge_index, dtype=torch.long)
+
+def compare_edge_sequence_with_edge_index(edge_sequence_tensor, edge_index):
+    edge_mapping = {}
+    for i, (src, dst) in enumerate(edge_sequence_tensor):
+        # Create a mapping from each edge to its position in the sequence
+        edge_mapping[(src.item(), dst.item())] = i
+    
+    # Check if each edge in edge_index is in the edge sequence
+    for i, (src, dst) in enumerate(edge_index.t()):
+        edge = (src.item(), dst.item())
+        if edge in edge_mapping:
+            print(f"Edge {edge} from edge_index is at position {edge_mapping[edge]} in the edge sequence.")
+        else:
+            print(f"Edge {edge} from edge_index is not in the edge sequence.")
 
 def convert_to_categorical(difficulties, min_difficulty, max_difficulty, num_classes):
     difficulty_range = np.linspace(min_difficulty, max_difficulty, num_classes + 1)
@@ -197,36 +224,6 @@ def run_inference(model, adjacency_matrices, node_feature_matrices, difficulties
         total_loss += loss.item()
     avg_loss = total_loss / len(difficulties)
     print(f'Loss: {avg_loss:.4f}')
-
-class SimpleGNN(torch.nn.Module):
-    def __init__(self, input_dim, hidden_dim1, hidden_dim2):
-        super(SimpleGNN, self).__init__()
-        
-        # Using an attention-based layer like GAT instead of simple GCN might help capture more complex relationships.
-        self.conv1 = GCNConv(input_dim, hidden_dim1)
-        self.conv2 = GATConv(hidden_dim1, hidden_dim2)
-        self.conv3 = GCNConv(hidden_dim2, hidden_dim1)
-        # Additional layers might help learn more complex representations
-        self.lin1 = torch.nn.Linear(hidden_dim2, 1)
-
-    def forward(self, data):
-        x, edge_index = data.x, data.edge_index
-        
-        # GAT layer
-        x = self.conv1(x, edge_index)
-        x = F.leaky_relu(x)  # LeakyReLU can sometimes help prevent "dying ReLU" problems
-        x = F.dropout(x, training=self.training, p=0.5)
-        
-        # Another GAT layer for deeper learning
-        x = self.conv2(x, edge_index)
-        x = F.leaky_relu(x)
-        x = global_mean_pool(x, data.batch)
-        
-        # More fully connected layers for learning representations beyond just the GAT outputs.
-        x = self.lin1(x)
-       
-        # For regression, we don't need a final activation function like softmax/log_softmax
-        return x
 
 def train(data, model, optimizer, criterion):
     model.train()
@@ -253,14 +250,17 @@ def run_training_and_evaluation(num_epochs=100, lr=0.01, save_path='best_model.p
         mlflow.log_param("num_epochs", num_epochs)
         mlflow.log_param("learning_rate", lr) 
         # Split data into training and testing sets
-        node_feature_matrices, train_adj_matrices, test_adj_matrices, train_node_features, test_node_features, train_difficulties, test_difficulties, train_mirrored_adj_matrices = data_loadin()
+        train_data_list, test_data_list = data_loading()
+
+        # Get the input dimension from the node features of the first Data object in the train_data_list
+        input_dim = train_data_list[0].x.size(1)
 
         # Initialize model, optimizer, and loss function
         hidden_dim1 = 256
         hidden_dim2 = 128
         mlflow.log_param("hidden_dim1", hidden_dim1)
         mlflow.log_param("hidden_dim2", hidden_dim2)
-        model = SimpleGNN(input_dim=node_feature_matrices[0].shape[1], hidden_dim1=hidden_dim1, hidden_dim2=hidden_dim2)
+        model = SimpleGNN(input_dim=input_dim, hidden_dim1=hidden_dim1, hidden_dim2=hidden_dim2)
         optimizer = torch.optim.Adam(model.parameters(), lr)
         criterion = torch.nn.L1Loss()   # Mean Squared Error for regression
 
@@ -270,54 +270,47 @@ def run_training_and_evaluation(num_epochs=100, lr=0.01, save_path='best_model.p
         print("Training...")
 
         for epoch in tqdm(range(num_epochs)):
-                total_train_loss = 0.0
-                model.train()
-                for i in range(len(train_difficulties)):
-                    for adj_matrix in [train_adj_matrices[i]]:
-                        edge_index = adjacency_to_edge_index(adj_matrix.todense())
-                        x = torch.tensor(train_node_features[i].todense(), dtype=torch.float)
-                        y = torch.tensor([train_difficulties[i]], dtype=torch.float)
-                        data = Data(x=x, edge_index=edge_index, y=y)
-                        optimizer.zero_grad()
-                        out = model(data).squeeze(-1)
-                        loss = criterion(out, y)
-                        loss.backward()
-                        optimizer.step()
-                        total_train_loss += loss.item()
-            
-                avg_train_loss = total_train_loss / len(train_difficulties)
-                total_val_loss = 0.0
-                model.eval()
-                for i in range(len(test_difficulties)):
-                    edge_index = adjacency_to_edge_index(test_adj_matrices[i].todense())
-                    x = torch.tensor(test_node_features[i].todense(), dtype=torch.float)
-                    y = torch.tensor([test_difficulties[i]], dtype=torch.float)
-                    data = Data(x=x, edge_index=edge_index, y=y)
+            total_train_loss = 0.0
+            model.train()
+            for data in train_data_list:  # Directly iterate over pre-processed data
+                optimizer.zero_grad()
+                out = model(data).squeeze(-1)
+                loss = criterion(out, data.y)
+                loss.backward()
+                optimizer.step()
+                total_train_loss += loss.item()
+
+            avg_train_loss = total_train_loss / len(train_data_list)
+            total_val_loss = 0.0
+            model.eval()
+            with torch.no_grad():  # No need to compute gradients for validation data
+                for data in test_data_list:
                     out = model(data).squeeze(-1)
-                    loss = criterion(out, y)
+                    loss = criterion(out, data.y)
                     total_val_loss += loss.item()
 
-                avg_val_loss = total_val_loss / len(test_difficulties)
-                print(f'Epoch: {epoch}, Training Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}')
-                # Log metrics for this epoch with MLflow
-                mlflow.log_metric("train_loss", avg_train_loss, step=epoch)
-                mlflow.log_metric("val_loss", avg_val_loss, step=epoch)
+            avg_val_loss = total_val_loss / len(test_data_list)
+            print(f'Epoch: {epoch}, Training Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}')
+            # Log metrics for this epoch with MLflow
+            mlflow.log_metric("train_loss", avg_train_loss, step=epoch)
+            mlflow.log_metric("val_loss", avg_val_loss, step=epoch)
 
-                # Saving the best model based on validation loss
-                if avg_val_loss < best_val_loss:
-                    best_val_loss = avg_val_loss
-                    torch.save(model.state_dict(), save_path)
-                    print(f"Best model saved with validation loss: {best_val_loss:.4f}")
+            # Saving the best model based on validation loss
+            if avg_val_loss < best_val_loss:
+                best_val_loss = avg_val_loss
+                torch.save(model.state_dict(), save_path)
+                print(f"Best model saved with validation loss: {best_val_loss:.4f}")
 
-                # Append statistics for later analysis
-                train_loss_list.append(avg_train_loss)
-                val_loss_list.append(avg_val_loss)
+            # Append statistics for later analysis
+            train_loss_list.append(avg_train_loss)
+            val_loss_list.append(avg_val_loss)
         mlflow.end_run()
+
         
     model.load_state_dict(torch.load(save_path))
     return model, val_loss_list, train_loss_list
 
 
 if __name__ == "__main__":
-    graph_preprocessing()
+    # graph_preprocessing()
     model, val_loss, train_loss = run_training_and_evaluation()
