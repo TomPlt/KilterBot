@@ -319,12 +319,13 @@ def process_data():
 # Function to get edge data from SQLite database
 def get_edge_data_from_db(graph_index):
     # Connect to SQLite database
-    conn = sqlite3.connect('../edgeapp/edges.db')
+    conn = sqlite3.connect('../edgeapp/edges copy.db')
     # Execute query to fetch edge data for the specific graph index
     query = f"SELECT * FROM edges WHERE graph_index = {graph_index}"
     df_edges = pd.read_sql(query, conn)
     conn.close()
     return df_edges
+
 
 def verify_features(nodes, df_nodes):
     feature_keys = set(df_nodes.columns)  # Assuming df_nodes has consistent columns
@@ -365,57 +366,66 @@ def build_and_save_graphs_with_features(index: int):
     
     row = df_train.loc[index]
     climbs = pd.read_csv('data/csvs/climbs.csv')
+    # get the name and difficulty of the climb matching the uuid
+    climb_name = climbs[climbs['uuid'] == row['uuid']]['name'].values[0]
+    climb_difficulty = row['difficulty']
     coordinates = ast.literal_eval(row['coordinates'])
     nodes = ast.literal_eval(row['nodes'])
     hold_variants = ast.literal_eval(row['hold_type'])
+    if None in hold_variants:
+        return
     map_hold_vars = {'Start': 0, 'Middle': 1, 'Finish': 2, 'Foot Only': 3}
     if not any(map_hold_vars[i] in [0, 2] for i in hold_variants):
         return
+
     hold_vars_list = [map_hold_vars[i] for i in hold_variants]
     coord_dict = {node: coord for node, coord in zip(nodes, coordinates)}
     G = nx.DiGraph()
     assert len(nodes) == len(hold_vars_list)
     assert len(nodes) == len(coordinates)
+    nodes_dict = {}
     for i, node in enumerate(nodes):
         node_features = df_nodes.loc[node]
         G.add_node(node, coordinates=coord_dict[node], hold_variant=hold_vars_list[i], **node_features)
-
+        nodes_dict[node] = i
     # Assuming get_edge_data_from_db(index) is a function you've defined to get the edge data
     df_edges = get_edge_data_from_db(index)
     df_edges = df_edges.sort_values(by='edge_index')
 
     for _, edge_row in df_edges.iterrows():
         G.add_edge(edge_row['start_node'], edge_row['end_node'])
-    # print(len(G.nodes))
     adjacency_matrix = nx.adjacency_matrix(G)
     save_npz(f"data/npzs/adjacency_mtrx/{index}.npz", adjacency_matrix)
     features_list = []
     for node in G.nodes(data=True):
-        # print(node, list(node[1].values())[-3:])
         features_list.append(list(node[1].values())[1:])
-        # Ensure all nodes have the same feature size
         if len(features_list[-1]) != len(features_list[0]):
             raise ValueError(f"Node {node} has a different number of features.")
     try:
         node_feature_array = np.array(features_list)
     except ValueError as e:
-        # If this raises an error, it helps identify the problematic node
         print(f"Error constructing feature array: {e}")
         raise
-
+    # print(df_edges)
     node_feature_matrix = csr_matrix(node_feature_array)
     save_npz(f"data/npzs/node_feature_mtrx/{index}.npz", node_feature_matrix)
-
-
-    # Map nodes to indices based on the order they were added to G for edge_index_tensor
-    node_to_idx = {node: i for i, node in enumerate(G.nodes())}
-    edge_index_list = [(node_to_idx[start], node_to_idx[end]) for start, end in G.edges()]
-    edge_index_tensor = torch.tensor(edge_index_list, dtype=torch.long)
-    torch.save(edge_index_tensor, f"data/tensors/edge_index_{index}.pt")
+    
+    ordered_edges = df_edges[['start_node', 'end_node']].values.tolist()
+    indexed_edges = []
+    for start, end in ordered_edges:
+        edge_tuple = (nodes_dict[start], nodes_dict[end])
+        if edge_tuple not in indexed_edges:
+            indexed_edges.append(edge_tuple)
+    edge_index_tensor_ordered = torch.tensor(indexed_edges, dtype=torch.long)
+    torch.save(edge_index_tensor_ordered, f"data/tensors/edge_sequence_{index}.pt")
+    # save also the difficulty and nameto a json 
+    climb_info = {'name': climb_name, 'difficulty': climb_difficulty}
+    with open(f"data/jsons/climb_info/{index}.json", "w") as file:
+        json.dump(climb_info, file)
 
     return G
 
 if __name__ == "__main__":
-    index = 1000
+    index = 2000 
     for i in tqdm(range(index+1)):
-        build_and_save_graphs_with_features(6)
+        build_and_save_graphs_with_features(i)

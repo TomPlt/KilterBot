@@ -126,9 +126,9 @@ def create_adjacency_matrix(edges, dim):
 
 def load_mtrx(index, type:MtrxType):
     if type == MtrxType.ADJACENCY_MATRIX:
-        return load_npz(f'data/npzs/adjacency_mtrx/{index}.npz')
+        return load_npz(f'data/npzs/adjacency_mtrx/{index}.npz').todense()
     elif type == MtrxType.NODE_FEATURE_MATRIX:
-        return load_npz(f'data/npzs/node_feature_mtrx/{index}.npz')
+        return load_npz(f'data/npzs/node_feature_mtrx/{index}.npz').todense()
     elif type == MtrxType.EDGE_SEQUENCE:
         return torch.load(f'data/tensors/edge_sequence_{index}.pt')
     # elif type == MtrxType.MIRRORED_ADJACENCY_MATRIX:
@@ -142,51 +142,63 @@ def sparse_to_torch_tensor(sparse_matrix):
     indices = np.vstack((coo_matrix.row, coo_matrix.col))
     edge_index = torch.tensor(indices, dtype=torch.long)
     return edge_index
-def data_loading():
-    df_train = pd.read_csv('data/csvs/train.csv')
-    difficulties = df_train['difficulty'].to_numpy()[:1000]
-    indices = np.arange(len(difficulties))
-    adjacency_matrices = []  # This will hold the adjacency matrices
-    node_feature_matrices = []  # This will hold the node feature matrices
-    edge_sequence_list = []  # This will hold the edge sequences
-    print("Loading data...")
-    for i in indices:
-        try:
-            edge_sequence_tensor = torch.load(f"data/tensors/edge_sequence_{i}.pt")
-            edge_sequence_list.append(edge_sequence_tensor)
-            adjacency_matrices.append(load_mtrx(i, MtrxType.ADJACENCY_MATRIX))
-            node_feature_matrices.append(load_mtrx(i, MtrxType.NODE_FEATURE_MATRIX))
-            # Load edge sequence tensors
-        except FileNotFoundError as e:
-            print(f"Data for index {i} not found: {e}")
-            difficulties = np.delete(difficulties, np.argwhere(indices == i))
-            indices = np.delete(indices, np.argwhere(indices == i))
-            continue
-    # Splitting the data
-    # print(difficulties)
-    train_indices, test_indices = train_test_split(
-        range(len(indices)), test_size=0.2, random_state=1
-    )
-    # print(indices)
-
-    def generate_data_list(indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, difficulties):
-        data_list = []
-        for idx in indices:
-            edge_index = adjacency_to_edge_index(adjacency_matrices[idx].todense())
-            edge_attr = edge_sequence_list[idx]
-            x = torch.tensor(node_feature_matrices[idx].todense(), dtype=torch.float)
-            y = torch.tensor([difficulties[idx]], dtype=torch.float)
-            data_object = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y)
-            data_list.append(data_object)
-        return data_list
-    train_data_list = generate_data_list(train_indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, difficulties)
-    test_data_list = generate_data_list(test_indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, difficulties)
-    return train_data_list, test_data_list
 
 def adjacency_to_edge_index(adjacency_matrix):
     src, dst = np.where(adjacency_matrix > 0)
     edge_index = np.stack((src, dst), axis=0)
     return torch.tensor(edge_index, dtype=torch.long)
+
+def data_loading():
+    df_train = pd.read_csv('data/csvs/train.csv')
+    difficulties = df_train['difficulty'].to_numpy()[0:2000]
+    indices = np.arange(len(difficulties))
+    valid_indices = []
+    adjacency_matrices = []  # This will hold the adjacency matrices
+    node_feature_matrices = []  # This will hold the node feature matrices
+    edge_sequence_list = []  # This will hold the edge sequences
+    valid_difficulties = []
+    print("Loading data...")
+    for i in indices:
+        try: 
+            node_feature_matrix = load_npz(f'data/npzs/node_feature_mtrx/{i}.npz').todense()
+            node_feature_matrices.append(node_feature_matrix)
+            adjacency_matrix = load_npz(f'data/npzs/adjacency_mtrx/{i}.npz').todense()
+            adjacency_matrices.append(adjacency_matrix)
+            edge_index = adjacency_to_edge_index(adjacency_matrix)
+            edge_seq = torch.load(f'data/tensors/edge_sequence_{i}.pt')
+            edge_sequence_list.append(edge_seq)
+            x = torch.tensor(node_feature_matrix, dtype=torch.float)
+            assert edge_seq.shape[0] == edge_index.shape[1], "Mismatch in number of edges vs edge sequence."
+            assert x.shape[0] == adjacency_matrix.shape[0], "Mismatch in number of nodes vs features."
+            assert edge_index.max() < x.shape[0], "edge_index contains node indices not in feature matrix."
+            valid_indices.append(i)
+            valid_difficulties.append(difficulties[i])  # Keep the valid difficulty
+
+        except FileNotFoundError:
+            # difficulties = np.delete(difficulties, i)
+            # indices = np.delete(indices, i)
+            pass
+    train_indices, test_indices = train_test_split(
+        valid_indices, test_size=0.2, random_state=1
+    )
+    # print(indices)
+    index_mapping = {v: k for k, v in enumerate(valid_indices)}
+    valid_difficulties = (np.array(valid_difficulties) - np.mean(valid_difficulties))/ np.std(valid_difficulties)
+    def generate_data_list(indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, difficulties):
+        data_list = []
+        for idx in indices:
+            idx = index_mapping[idx]
+            edge_index = adjacency_to_edge_index(adjacency_matrices[idx])
+            edge_attr = edge_sequence_list[idx]
+            x = torch.tensor(node_feature_matrices[idx], dtype=torch.float)
+            y = torch.tensor([difficulties[idx]], dtype=torch.float)
+            data_object = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y)
+            data_list.append(data_object)
+        return data_list
+    train_data_list = generate_data_list(train_indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, valid_difficulties)
+    test_data_list = generate_data_list(test_indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, valid_difficulties)
+    return train_data_list, test_data_list
+
 
 def compare_edge_sequence_with_edge_index(edge_sequence_tensor, edge_index):
     edge_mapping = {}
@@ -242,8 +254,8 @@ def evaluate(data, model, criterion):
         loss = criterion(predictions, data.y)
     return loss.item()
 
-def run_training_and_evaluation(num_epochs=100, lr=0.01, save_path='best_model.pt'):
-    mlflow.set_experiment("GNN_Training_Results")
+def run_training_and_evaluation(num_epochs=100, lr=0.005, save_path='best_model.pt'):
+    mlflow.set_experiment("Default")
 
     with mlflow.start_run():
         # Log parameters
@@ -256,11 +268,13 @@ def run_training_and_evaluation(num_epochs=100, lr=0.01, save_path='best_model.p
         input_dim = train_data_list[0].x.size(1)
 
         # Initialize model, optimizer, and loss function
-        hidden_dim1 = 256
+        hidden_dim1 = 512
         hidden_dim2 = 128
         mlflow.log_param("hidden_dim1", hidden_dim1)
         mlflow.log_param("hidden_dim2", hidden_dim2)
-        model = SimpleGNN(input_dim=input_dim, hidden_dim1=hidden_dim1, hidden_dim2=hidden_dim2)
+        mlflow.log_param("Model", "SequentialGNN LSTM")
+        model = SimpleGNN(input_dim=input_dim, hidden_dim1=hidden_dim1, hidden_dim2=hidden_dim2, dropout_rate=0.35)
+        print(model)
         optimizer = torch.optim.Adam(model.parameters(), lr)
         criterion = torch.nn.L1Loss()   # Mean Squared Error for regression
 
