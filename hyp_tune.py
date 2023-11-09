@@ -8,13 +8,15 @@ from torch_geometric.loader import DataLoader
 
 def run_training_and_evaluation(train_loader, test_loader, hidden_dim1=256, hidden_dim2=128, rnn_hidden_dim=256, num_epochs=100, lr=0.01, dropout_rate=0.5):
     mlflow.log_param("num_epochs", num_epochs)
-    mlflow.log_param("length train loader", len(train_loader)*32)
+    mlflow.log_param("length train loader", len(train_loader))
+    mlflow.log_param("loss", "MSE")
     input_dim = 100
     mlflow.log_param("hidden_dim1", hidden_dim1)
     mlflow.log_param("hidden_dim2", hidden_dim2)
     mlflow.log_param("rnn_hidden_dim", rnn_hidden_dim)
     model = SequentialRNNGNN(input_dim=input_dim, hidden_dim1=hidden_dim1, hidden_dim2=hidden_dim2, rnn_hidden_dim=rnn_hidden_dim, dropout_rate=dropout_rate)
     optimizer = torch.optim.Adam(model.parameters(), lr)
+    # criterion is RMSE loss
     mse_loss_criterion = torch.nn.MSELoss()  # Mean Squared Error for regression
     l1_loss_criterion = torch.nn.L1Loss()    # Mean Absolute Error for validation
 
@@ -74,25 +76,40 @@ def run_training_and_evaluation(train_loader, test_loader, hidden_dim1=256, hidd
 
 def main():
     # Define hyperparameter grid
-    lrs = [0.0025, 0.0035, 0.0045]
-    dropout_rates = [0.4, 0.5]
-    num_epochs = 100
-    hidden_dim1 = 200
-    hidden_dim2 = 128
-    rnn_hidden_dim = 128
+    lrs = [0.001, 0.002, 0.005]
+    dropout_rates = [0.3, 0.45, 0.5, 0.55]
+    batch_sizes = [16, 32, 64]
+    hidden_dims = [(256, 128), (512, 256), (128, 64)]
+    num_epochs = 200
+    rnn_hidden_dims = [128, 256]
     train_data_list, test_data_list = data_loading()
-    # print(len(train_data_list), len(test_data_list))
-    # exit()
-    train_loader = DataLoader(train_data_list, batch_size=32, shuffle=True)
-    test_loader = DataLoader(test_data_list, batch_size=32, shuffle=False)
     mlflow.set_experiment("Hyperparameter_Tuning")
-    # for lr in learning_rates:
-    for dropout in dropout_rates:
-        for lr in lrs:
-            with mlflow.start_run():
-                mlflow.log_params({'learning_rate': lr, 'dropout_rate': dropout})
-                best_val_loss = run_training_and_evaluation(train_loader, test_loader, hidden_dim1, hidden_dim2, rnn_hidden_dim, num_epochs, lr, dropout)
-                mlflow.log_metric("best_val_loss", best_val_loss*3.7927530348225766)
-                mlflow.end_run()
+
+    for batch_size in batch_sizes:
+        train_loader = DataLoader(train_data_list, batch_size=batch_size, shuffle=True)
+        test_loader = DataLoader(test_data_list, batch_size=batch_size, shuffle=False)
+
+        for hidden_dim1, hidden_dim2 in hidden_dims:
+            for rnn_hidden_dim in rnn_hidden_dims:
+                for dropout in dropout_rates:
+                    for lr in lrs:
+                        with mlflow.start_run():
+                            mlflow.log_params({
+                                'learning_rate': lr,
+                                'dropout_rate': dropout,
+                                'batch_size': batch_size,
+                                'hidden_dim1': hidden_dim1,
+                                'hidden_dim2': hidden_dim2,
+                                'rnn_hidden_dim': rnn_hidden_dim
+                            })
+                            best_val_loss = run_training_and_evaluation(
+                                train_loader, test_loader,
+                                hidden_dim1, hidden_dim2, rnn_hidden_dim,
+                                num_epochs, lr, dropout
+                            )
+                            mlflow.log_metric("best_val_loss", best_val_loss * 3.7927530348225766)
+                            mlflow.end_run()
+
+                        
 if __name__ == "__main__":
     main()
