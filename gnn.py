@@ -150,7 +150,7 @@ def adjacency_to_edge_index(adjacency_matrix):
 
 def data_loading():
     df_train = pd.read_csv('data/csvs/train.csv')
-    difficulties = df_train['difficulty'].to_numpy()[0:2000]
+    difficulties = df_train['difficulty'].to_numpy()
     indices = np.arange(len(difficulties))
     valid_indices = []
     adjacency_matrices = []  # This will hold the adjacency matrices

@@ -319,7 +319,7 @@ def process_data():
 # Function to get edge data from SQLite database
 def get_edge_data_from_db(graph_index):
     # Connect to SQLite database
-    conn = sqlite3.connect('../edgeapp/edges copy.db')
+    conn = sqlite3.connect('../edgeapp/edges.db')
     # Execute query to fetch edge data for the specific graph index
     query = f"SELECT * FROM edges WHERE graph_index = {graph_index}"
     df_edges = pd.read_sql(query, conn)
@@ -391,11 +391,12 @@ def build_and_save_graphs_with_features(index: int):
     # Assuming get_edge_data_from_db(index) is a function you've defined to get the edge data
     df_edges = get_edge_data_from_db(index)
     df_edges = df_edges.sort_values(by='edge_index')
-
     for _, edge_row in df_edges.iterrows():
         G.add_edge(edge_row['start_node'], edge_row['end_node'])
     adjacency_matrix = nx.adjacency_matrix(G)
     save_npz(f"data/npzs/adjacency_mtrx/{index}.npz", adjacency_matrix)
+    from gnn import adjacency_to_edge_index
+    edge_index = adjacency_to_edge_index(adjacency_matrix.todense())
     features_list = []
     for node in G.nodes(data=True):
         features_list.append(list(node[1].values())[1:])
@@ -423,9 +424,11 @@ def build_and_save_graphs_with_features(index: int):
     with open(f"data/jsons/climb_info/{index}.json", "w") as file:
         json.dump(climb_info, file)
 
+
     return G
 
 if __name__ == "__main__":
-    index = 2000 
-    for i in tqdm(range(index+1)):
+    index = 4210
+    for i in tqdm(range(3500, index+1)):
         build_and_save_graphs_with_features(i)
+        # exit()

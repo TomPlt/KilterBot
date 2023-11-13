@@ -8,8 +8,6 @@ from torch_geometric.loader import DataLoader
 
 def run_training_and_evaluation(train_loader, test_loader, hidden_dim1=256, hidden_dim2=128, rnn_hidden_dim=256, num_epochs=100, lr=0.01, dropout_rate=0.5):
     mlflow.log_param("num_epochs", num_epochs)
-    mlflow.log_param("length train loader", len(train_loader))
-    mlflow.log_param("loss", "MSE")
     input_dim = 100
     mlflow.log_param("hidden_dim1", hidden_dim1)
     mlflow.log_param("hidden_dim2", hidden_dim2)
@@ -83,32 +81,41 @@ def main():
     num_epochs = 200
     rnn_hidden_dims = [128, 256]
     train_data_list, test_data_list = data_loading()
-    mlflow.set_experiment("Hyperparameter_Tuning")
+    mlflow.set_experiment("Full Dataset")
+    # implemnt a counter for the number of runs to check progress
+    total_runs = len(lrs) * len(dropout_rates) * len(batch_sizes) * len(hidden_dims) * len(rnn_hidden_dims)
+    counter = 0
+    batch_size = 32
+    train_loader = DataLoader(train_data_list, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_data_list, batch_size=batch_size, shuffle=False)
 
-    for batch_size in batch_sizes:
-        train_loader = DataLoader(train_data_list, batch_size=batch_size, shuffle=True)
-        test_loader = DataLoader(test_data_list, batch_size=batch_size, shuffle=False)
-
-        for hidden_dim1, hidden_dim2 in hidden_dims:
-            for rnn_hidden_dim in rnn_hidden_dims:
-                for dropout in dropout_rates:
-                    for lr in lrs:
-                        with mlflow.start_run():
-                            mlflow.log_params({
-                                'learning_rate': lr,
-                                'dropout_rate': dropout,
-                                'batch_size': batch_size,
-                                'hidden_dim1': hidden_dim1,
-                                'hidden_dim2': hidden_dim2,
-                                'rnn_hidden_dim': rnn_hidden_dim
-                            })
-                            best_val_loss = run_training_and_evaluation(
-                                train_loader, test_loader,
-                                hidden_dim1, hidden_dim2, rnn_hidden_dim,
-                                num_epochs, lr, dropout
-                            )
-                            mlflow.log_metric("best_val_loss", best_val_loss * 3.7927530348225766)
-                            mlflow.end_run()
+        # for hidden_dim1, hidden_dim2 in hidden_dims:
+        #     for rnn_hidden_dim in rnn_hidden_dims:
+        #         for dropout in dropout_rates:
+                # for lr in lrs:
+    lr = 0.01
+    dropout = 0.5
+    hidden_dim1 = 256  
+    hidden_dim2 = 128
+    rnn_hidden_dim = 128
+    with mlflow.start_run():
+        mlflow.log_params({
+            'learning_rate': lr,
+            'dropout_rate': dropout,
+            'batch_size': batch_size,
+            'hidden_dim1': hidden_dim1,
+            'hidden_dim2': hidden_dim2,
+            'rnn_hidden_dim': rnn_hidden_dim
+        })
+        best_val_loss = run_training_and_evaluation(
+            train_loader, test_loader,
+            hidden_dim1, hidden_dim2, rnn_hidden_dim,
+            num_epochs, lr, dropout
+        )
+        mlflow.log_metric("best_val_loss", best_val_loss * 3.6313932593669085)
+        mlflow.end_run()
+        counter += 1
+        print(f"Run {counter} of {total_runs} completed.")
 
                         
 if __name__ == "__main__":
