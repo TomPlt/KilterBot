@@ -183,7 +183,7 @@ def data_loading():
     )
     # print(indices)
     index_mapping = {v: k for k, v in enumerate(valid_indices)}
-    valid_difficulties = (np.array(valid_difficulties) - np.mean(valid_difficulties))/ np.std(valid_difficulties)
+    # valid_difficulties = (np.array(valid_difficulties) - np.mean(valid_difficulties))/ np.std(valid_difficulties)
     def generate_data_list(indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, difficulties):
         data_list = []
         for idx in indices:

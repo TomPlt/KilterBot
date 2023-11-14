@@ -4,16 +4,37 @@ from gnn import run_training_and_evaluation, data_loading
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from torch_geometric.loader import DataLoader
+import numpy as np
+import optuna
 
+def calculate_mean_loss_per_bin(true_values, predicted_values, num_bins=10):
+    # Binning the true values
+    bins = np.linspace(min(true_values), max(true_values), num_bins + 1)
+    bin_indices = np.digitize(true_values, bins) - 1  # -1 to make bins 0-indexed
 
-def run_training_and_evaluation(train_loader, test_loader, hidden_dim1=256, hidden_dim2=128, rnn_hidden_dim=256, num_epochs=100, lr=0.01, dropout_rate=0.5):
-    mlflow.log_param("num_epochs", num_epochs)
+    mean_losses = []
+    for i in range(num_bins):
+        # Extract values in each bin
+        indices = [index for index, bin_index in enumerate(bin_indices) if bin_index == i]
+        bin_true_values = [true_values[index] for index in indices]
+        bin_predicted_values = [predicted_values[index] for index in indices]
+        
+        # Calculate mean loss (mean absolute error) for each bin
+        if bin_true_values:
+            mean_loss = np.mean([abs(true - pred) for true, pred in zip(bin_true_values, bin_predicted_values)])
+            mean_losses.append(mean_loss)
+        else:
+            mean_losses.append(0)
+
+    return bins, mean_losses
+def run_training_and_evaluation(train_loader, test_loader, hidden_dim1=256, hidden_dim2=128, num_epochs=100, lr=0.01, dropout_rate=0.5):
+    # mlflow.log_param("num_epochs", num_epochs)
     input_dim = 100
-    mlflow.log_param("hidden_dim1", hidden_dim1)
-    mlflow.log_param("hidden_dim2", hidden_dim2)
-    mlflow.log_param("rnn_hidden_dim", rnn_hidden_dim)
-    model = SequentialRNNGNN(input_dim=input_dim, hidden_dim1=hidden_dim1, hidden_dim2=hidden_dim2, rnn_hidden_dim=rnn_hidden_dim, dropout_rate=dropout_rate)
-    optimizer = torch.optim.Adam(model.parameters(), lr)
+    # mlflow.log_param("hidden_dim1", hidden_dim1)
+    # mlflow.log_param("hidden_dim2", hidden_dim2)
+    # mlflow.log_param("rnn_hidden_dim", rnn_hidden_dim)
+    model = SimpleGNN(input_dim=input_dim, hidden_dim1=hidden_dim1, hidden_dim2=hidden_dim2, dropout_rate=dropout_rate)
+    optimizer = torch.optim.AdamW(model.parameters(), lr, weight_decay=5e-4)
     # criterion is RMSE loss
     mse_loss_criterion = torch.nn.MSELoss()  # Mean Squared Error for regression
     l1_loss_criterion = torch.nn.L1Loss()    # Mean Absolute Error for validation
@@ -58,19 +79,54 @@ def run_training_and_evaluation(train_loader, test_loader, hidden_dim1=256, hidd
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             torch.save(model.state_dict(), 'best_model.pt')
-        mlflow.log_metric("train_loss", avg_train_loss, step=epoch)
-        mlflow.log_metric("val_loss", avg_val_loss, step=epoch)
+        # mlflow.log_metric("train_loss", avg_train_loss, step=epoch)
+        # mlflow.log_metric("val_loss", avg_val_loss, step=epoch)
+
+    bins, mean_losses = calculate_mean_loss_per_bin(true_values, predicted_values)
+   # Plotting True Values vs Predicted Values
     plt.figure(figsize=(10, 5))
     plt.scatter(true_values, predicted_values, alpha=0.5)
     plt.title('True vs Predicted Values')
     plt.xlabel('True Values')
     plt.ylabel('Predicted Values')
     plt.grid(True)
-    val_loss_plot_filename = "val_loss_vs_pred.png"
-    plt.savefig(val_loss_plot_filename)
-    mlflow.log_artifact(val_loss_plot_filename)
+    plt.savefig("true_vs_pred.png")
+    # mlflow.log_artifact("true_vs_pred.png")
+
+    # Plotting Mean Loss by Bins
+    plt.figure(figsize=(10, 5))
+    plt.bar(bins[:-1], mean_losses, width=np.diff(bins), align="edge", edgecolor='black')
+    plt.title('Mean Loss by Bins of True Values')
+    plt.xlabel('Bins of True Values')
+    plt.ylabel('Mean Loss')
+    plt.grid(True)
+    plt.savefig("mean_loss_by_bins.png")
+    # mlflow.log_artifact("mean_loss_by_bins.png")
+    plt.close('all')
+    return best_val_loss
+
+def objective(trial):
+    # Define hyperparameters using trial object
+    lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
+    dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.6)
+    batch_size = trial.suggest_categorical("batch_size", [16, 32, 64])
+    hidden_dim1 = trial.suggest_categorical("hidden_dim1", [256, 512, 128])
+    hidden_dim2 = trial.suggest_categorical("hidden_dim2", [128, 256, 64])
+    train_data_list, test_data_list = data_loading()
+
+    # Create data loaders
+    train_loader = DataLoader(train_data_list, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_data_list, batch_size=batch_size, shuffle=False)
+    num_epochs = 50
+    # Run the training and validation process
+    best_val_loss = run_training_and_evaluation(
+        train_loader, test_loader,
+        hidden_dim1, hidden_dim2,
+        num_epochs, lr, dropout_rate
+    )
 
     return best_val_loss
+
 
 def main():
     # Define hyperparameter grid
@@ -78,45 +134,41 @@ def main():
     dropout_rates = [0.3, 0.45, 0.5, 0.55]
     batch_sizes = [16, 32, 64]
     hidden_dims = [(256, 128), (512, 256), (128, 64)]
-    num_epochs = 200
-    rnn_hidden_dims = [128, 256]
+    num_epochs = 200  # You might want to reduce this for quicker iterations
     train_data_list, test_data_list = data_loading()
-    mlflow.set_experiment("Full Dataset")
-    # implemnt a counter for the number of runs to check progress
-    total_runs = len(lrs) * len(dropout_rates) * len(batch_sizes) * len(hidden_dims) * len(rnn_hidden_dims)
+    mlflow.set_experiment("Hyperparameter Tuning 2")
+
+    # Initialize counter for the number of runs
+    total_runs = len(lrs) * len(dropout_rates) * len(batch_sizes) * len(hidden_dims)
     counter = 0
-    batch_size = 32
-    train_loader = DataLoader(train_data_list, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_data_list, batch_size=batch_size, shuffle=False)
 
-        # for hidden_dim1, hidden_dim2 in hidden_dims:
-        #     for rnn_hidden_dim in rnn_hidden_dims:
-        #         for dropout in dropout_rates:
-                # for lr in lrs:
-    lr = 0.01
-    dropout = 0.5
-    hidden_dim1 = 256  
-    hidden_dim2 = 128
-    rnn_hidden_dim = 128
-    with mlflow.start_run():
-        mlflow.log_params({
-            'learning_rate': lr,
-            'dropout_rate': dropout,
-            'batch_size': batch_size,
-            'hidden_dim1': hidden_dim1,
-            'hidden_dim2': hidden_dim2,
-            'rnn_hidden_dim': rnn_hidden_dim
-        })
-        best_val_loss = run_training_and_evaluation(
-            train_loader, test_loader,
-            hidden_dim1, hidden_dim2, rnn_hidden_dim,
-            num_epochs, lr, dropout
-        )
-        mlflow.log_metric("best_val_loss", best_val_loss * 3.6313932593669085)
-        mlflow.end_run()
-        counter += 1
-        print(f"Run {counter} of {total_runs} completed.")
+    for batch_size in batch_sizes:
+        train_loader = DataLoader(train_data_list, batch_size=batch_size, shuffle=True)
+        test_loader = DataLoader(test_data_list, batch_size=batch_size, shuffle=False)
+        
+        for hidden_dim1, hidden_dim2 in hidden_dims:
+            for dropout_rate in dropout_rates:
+                for lr in lrs:
+                    counter += 1
+                    print(f"Running configuration {counter} of {total_runs}")
+                    with mlflow.start_run():
+                        mlflow.log_params({
+                            'learning_rate': lr,
+                            'dropout_rate': dropout_rate,
+                            'batch_size': batch_size,
+                            'hidden_dim1': hidden_dim1,
+                            'hidden_dim2': hidden_dim2
+                        })
+                        best_val_loss = run_training_and_evaluation(
+                            train_loader, test_loader,
+                            hidden_dim1, hidden_dim2,
+                            num_epochs, lr, dropout_rate
+                        )
+                        mlflow.log_metric("best_val_loss", best_val_loss)
+                        mlflow.end_run()
+                    print(f"Configuration {counter} of {total_runs} completed: Best Val Loss: {best_val_loss}")
 
-                        
 if __name__ == "__main__":
     main()
+    # study = optuna.create_study(direction="minimize", study_name="Hyperparameter Tuning")
+    # study.optimize(objective, n_trials=100) 

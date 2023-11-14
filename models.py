@@ -24,6 +24,7 @@ class SequentialRNNGNN(torch.nn.Module):
         super(SequentialRNNGNN, self).__init__()
         self.dropout_rate = dropout_rate
         self.conv1 = ChebConv(input_dim, hidden_dim1, K=2)
+        self.bn1 = torch.nn.BatchNorm1d(hidden_dim1)
         self.rnn = torch.nn.GRU(input_size=hidden_dim1 * 2, hidden_size=rnn_hidden_dim, batch_first=True)
         self.conv2 = GATConv(rnn_hidden_dim + hidden_dim1, hidden_dim2)
         self.lin1 = torch.nn.Linear(hidden_dim2, 1)
@@ -32,6 +33,7 @@ class SequentialRNNGNN(torch.nn.Module):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
         edge_index = edge_attr.reshape(2, -1)   
         x = self.conv1(x, edge_index)
+        x = self.bn1(x)
         x = F.relu(x)
         x = F.dropout(x, training=self.training, p=self.dropout_rate)
         edge_sequence = edge_attr.view(-1, 2).t().long()
@@ -68,24 +70,27 @@ class SequentialLSTMGNN(torch.nn.Module):
         x = F.relu(x)
         x = global_mean_pool(x, data.batch)
         x = self.lin1(x)
-
         return x
     
 class SimpleGNN(torch.nn.Module):
     def __init__(self, input_dim, hidden_dim1, hidden_dim2, dropout_rate=0.5):
         super(SimpleGNN, self).__init__()
         self.dropout_rate = dropout_rate
-        self.conv1 = ChebConv(input_dim, hidden_dim1, K=2)
+        self.conv1 = GCNConv(input_dim, hidden_dim1, K=2)
         self.conv2 = GATConv(hidden_dim1, hidden_dim2)
         self.lin1 = torch.nn.Linear(hidden_dim2, 1)
+        self.bn1 = torch.nn.BatchNorm1d(hidden_dim1)
+        self.bn2 = torch.nn.BatchNorm1d(hidden_dim2)
 
     def forward(self, data):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
         # edge_index = edge_attr.reshape(2, -1)
         x = self.conv1(x, edge_index)
+        x = self.bn1(x)
         x = F.relu(x)  
         x = F.dropout(x, training=self.training, p=self.dropout_rate)
         x = self.conv2(x, edge_index)
+        x = self.bn2(x)
         x = F.relu(x)
         x = global_mean_pool(x, data.batch)
         x = self.lin1(x)
