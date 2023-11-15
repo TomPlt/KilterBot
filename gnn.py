@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from scipy.sparse import csr_matrix, save_npz, load_npz
 from sklearn.model_selection import train_test_split
 from enum import Enum
+from sklearn.model_selection import KFold
 
 from tqdm import tqdm
 import torch
@@ -195,10 +196,17 @@ def data_loading():
             data_object = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y)
             data_list.append(data_object)
         return data_list
-    train_data_list = generate_data_list(train_indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, valid_difficulties)
-    test_data_list = generate_data_list(test_indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, valid_difficulties)
-    return train_data_list, test_data_list
-
+    
+    kf = KFold(n_splits=5, shuffle=True, random_state=1)
+    fold_data_lists = []
+    
+    for train_idx, test_idx in kf.split(indices):
+        train_indices = [indices[i] for i in train_idx if i in valid_indices]
+        test_indices = [indices[i] for i in test_idx if i in valid_indices]
+        train_data_list = generate_data_list(train_indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, valid_difficulties)
+        test_data_list = generate_data_list(test_indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, valid_difficulties)
+        fold_data_lists.append((train_data_list, test_data_list))
+    return fold_data_lists 
 
 def compare_edge_sequence_with_edge_index(edge_sequence_tensor, edge_index):
     edge_mapping = {}

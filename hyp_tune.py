@@ -112,27 +112,31 @@ def objective(trial):
     batch_size = trial.suggest_categorical("batch_size", [16, 32, 64])
     hidden_dim1 = trial.suggest_categorical("hidden_dim1", [256, 512, 128])
     hidden_dim2 = trial.suggest_categorical("hidden_dim2", [128, 256, 64])
-    train_data_list, test_data_list = data_loading()
+    fold_data_lists = data_loading()
+    fold_val_losses = []
 
-    # Create data loaders
-    train_loader = DataLoader(train_data_list, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_data_list, batch_size=batch_size, shuffle=False)
-    num_epochs = 50
-    # Run the training and validation process
-    best_val_loss = run_training_and_evaluation(
-        train_loader, test_loader,
-        hidden_dim1, hidden_dim2,
-        num_epochs, lr, dropout_rate
-    )
+    for train_data, test_data in fold_data_lists:
+        train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+        test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
-    return best_val_loss
+        # Run the training and validation process for each fold
+        best_val_loss = run_training_and_evaluation(
+            train_loader, test_loader,
+            hidden_dim1, hidden_dim2,
+            num_epochs=50, lr=lr, dropout_rate=dropout_rate
+        )
+        fold_val_losses.append(best_val_loss)
 
+    # Average the best validation loss across all folds
+    avg_val_loss = sum(fold_val_losses) / len(fold_val_losses)
+    
+    return avg_val_loss
 
 def main():
     # Define hyperparameter grid
     lrs = [0.001, 0.002, 0.005]
     dropout_rates = [0.3, 0.45, 0.5, 0.55]
-    batch_sizes = [16, 32, 64]
+    batch_sizes = [32, 64]
     hidden_dims = [(256, 128), (512, 256), (128, 64)]
     num_epochs = 200  # You might want to reduce this for quicker iterations
     train_data_list, test_data_list = data_loading()
@@ -169,6 +173,19 @@ def main():
                     print(f"Configuration {counter} of {total_runs} completed: Best Val Loss: {best_val_loss}")
 
 if __name__ == "__main__":
-    main()
-    # study = optuna.create_study(direction="minimize", study_name="Hyperparameter Tuning")
-    # study.optimize(objective, n_trials=100) 
+    # Ensure that Optuna reuses the study if it exists, otherwise create a new one
+    try:
+        study = optuna.load_study(
+            study_name="Hyperparameter Tuning", 
+            storage="sqlite:///hyptune.db"
+        )
+    except KeyError:
+        # If the study does not exist, create a new one
+        study = optuna.create_study(
+            direction="minimize", 
+            study_name="Hyperparameter Tuning", 
+            storage="sqlite:///hyptune.db",
+            load_if_exists=True
+        )
+
+    study.optimize(objective, n_trials=100)
