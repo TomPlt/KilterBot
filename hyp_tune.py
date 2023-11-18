@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 from torch_geometric.loader import DataLoader
 import numpy as np
 import optuna
+import logging
+import torch
+
+logging.basicConfig(level=logging.INFO)
 
 def calculate_mean_loss_per_bin(true_values, predicted_values, num_bins=10):
     # Binning the true values
@@ -27,14 +31,14 @@ def calculate_mean_loss_per_bin(true_values, predicted_values, num_bins=10):
             mean_losses.append(0)
 
     return bins, mean_losses
-def run_training_and_evaluation(train_loader, test_loader, hidden_dim1=256, hidden_dim2=128, num_epochs=100, lr=0.01, dropout_rate=0.5):
+def run_training_and_evaluation(train_loader, test_loader, hidden_dim1=256, hidden_dim2=128, rnn_hidden_dim=128, lr=0.01, dropout_rate=0.5, weight_decay=5e-4, num_epochs=100):
     # mlflow.log_param("num_epochs", num_epochs)
     input_dim = 100
     # mlflow.log_param("hidden_dim1", hidden_dim1)
     # mlflow.log_param("hidden_dim2", hidden_dim2)
     # mlflow.log_param("rnn_hidden_dim", rnn_hidden_dim)
-    model = SimpleGNN(input_dim=input_dim, hidden_dim1=hidden_dim1, hidden_dim2=hidden_dim2, dropout_rate=dropout_rate)
-    optimizer = torch.optim.AdamW(model.parameters(), lr, weight_decay=5e-4)
+    model = SequentialRNNGNN(input_dim=input_dim, hidden_dim1=hidden_dim1, hidden_dim2=hidden_dim2, rnn_hidden_dim=rnn_hidden_dim, dropout_rate=dropout_rate)
+    optimizer = torch.optim.AdamW(model.parameters(), lr, weight_decay=weight_decay)
     # criterion is RMSE loss
     mse_loss_criterion = torch.nn.MSELoss()  # Mean Squared Error for regression
     l1_loss_criterion = torch.nn.L1Loss()    # Mean Absolute Error for validation
@@ -107,29 +111,28 @@ def run_training_and_evaluation(train_loader, test_loader, hidden_dim1=256, hidd
 
 def objective(trial):
     # Define hyperparameters using trial object
-    lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
+    lr = trial.suggest_float("lr", 1e-4, 1e-1, log=True)
     dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.6)
-    batch_size = trial.suggest_categorical("batch_size", [16, 32, 64])
+    weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-3, log=True)
     hidden_dim1 = trial.suggest_categorical("hidden_dim1", [256, 512, 128])
     hidden_dim2 = trial.suggest_categorical("hidden_dim2", [128, 256, 64])
+    rnn_hidden_dim = trial.suggest_categorical("rnn_hidden_dim", [64, 128, 256])
     fold_data_lists = data_loading()
     fold_val_losses = []
 
     for train_data, test_data in fold_data_lists:
-        train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-        test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
+        train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
+        test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
 
         # Run the training and validation process for each fold
         best_val_loss = run_training_and_evaluation(
             train_loader, test_loader,
-            hidden_dim1, hidden_dim2,
-            num_epochs=50, lr=lr, dropout_rate=dropout_rate
-        )
+            hidden_dim1, hidden_dim2, rnn_hidden_dim,
+            lr, dropout_rate, weight_decay, num_epochs=50)
         fold_val_losses.append(best_val_loss)
-
-    # Average the best validation loss across all folds
-    avg_val_loss = sum(fold_val_losses) / len(fold_val_losses)
     
+    avg_val_loss = sum(fold_val_losses) / len(fold_val_losses)
+
     return avg_val_loss
 
 def main():
@@ -176,15 +179,15 @@ if __name__ == "__main__":
     # Ensure that Optuna reuses the study if it exists, otherwise create a new one
     try:
         study = optuna.load_study(
-            study_name="Hyperparameter Tuning", 
-            storage="sqlite:///hyptune.db"
+            study_name="Hyperparameter Tuning RNN", 
+            storage="sqlite:///hyptune_RNN.db"
         )
     except KeyError:
         # If the study does not exist, create a new one
         study = optuna.create_study(
             direction="minimize", 
-            study_name="Hyperparameter Tuning", 
-            storage="sqlite:///hyptune.db",
+            study_name="Hyperparameter Tuning RNN", 
+            storage="sqlite:///hyptune_RNN.db",
             load_if_exists=True
         )
 

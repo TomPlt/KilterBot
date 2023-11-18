@@ -328,7 +328,6 @@ def run_training_and_evaluation(num_epochs=100, lr=0.005, save_path='best_model.
             val_loss_list.append(avg_val_loss)
         mlflow.end_run()
 
-        
     model.load_state_dict(torch.load(save_path))
     return model, val_loss_list, train_loss_list
 

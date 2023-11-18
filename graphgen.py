@@ -17,6 +17,7 @@ import ast
 import sqlite3
 import torch
 from scipy.sparse import csr_matrix
+from gnn import adjacency_to_edge_index
 
 
 # Constants
@@ -392,10 +393,18 @@ def build_and_save_graphs_with_features(index: int):
     df_edges = get_edge_data_from_db(index)
     df_edges = df_edges.sort_values(by='edge_index')
     for _, edge_row in df_edges.iterrows():
-        G.add_edge(edge_row['start_node'], edge_row['end_node'])
+        foothold_counter = 0    
+        features_temp= [i[1]['coordinates'] for i in G.nodes(data=True)]
+        for i in G.nodes(data=True):
+            if i[0] == edge_row['start_node']:
+                start_node_coord = i[1]['coordinates']
+                break
+        for i in features_temp: 
+            if i[1] < start_node_coord[1] and np.linalg.norm(np.array(i) - np.array(start_node_coord)) <= 80 :
+                foothold_counter += 1
+        G.add_edge(edge_row['start_node'], edge_row['end_node'], footholds=foothold_counter)
     adjacency_matrix = nx.adjacency_matrix(G)
     save_npz(f"data/npzs/adjacency_mtrx/{index}.npz", adjacency_matrix)
-    from gnn import adjacency_to_edge_index
     edge_index = adjacency_to_edge_index(adjacency_matrix.todense())
     features_list = []
     for node in G.nodes(data=True):
@@ -413,6 +422,14 @@ def build_and_save_graphs_with_features(index: int):
     
     ordered_edges = df_edges[['start_node', 'end_node']].values.tolist()
     indexed_edges = []
+    foothold_attributes = []
+    for start_node, end_node in ordered_edges:
+    # Retrieve the foothold attribute from the edge
+        foothold = G[start_node][end_node]['footholds'] if G.has_edge(start_node, end_node) else 0
+        foothold_attributes.append(foothold)
+    foothold_attribute_tensor = torch.tensor(foothold_attributes, dtype=torch.long)
+    torch.save(foothold_attribute_tensor, f"data/tensors/foothold_attributes_{index}.pt")
+
     for start, end in ordered_edges:
         edge_tuple = (nodes_dict[start], nodes_dict[end])
         if edge_tuple not in indexed_edges:
@@ -423,12 +440,10 @@ def build_and_save_graphs_with_features(index: int):
     climb_info = {'name': climb_name, 'difficulty': climb_difficulty}
     with open(f"data/jsons/climb_info/{index}.json", "w") as file:
         json.dump(climb_info, file)
-
-
     return G
 
 if __name__ == "__main__":
     index = 4210
-    for i in tqdm(range(3500, index+1)):
+    for i in tqdm(range(0, index+1)):
         build_and_save_graphs_with_features(i)
         # exit()
