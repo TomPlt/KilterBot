@@ -328,6 +328,7 @@ def get_edge_data_from_db(graph_index):
     return df_edges
 
 
+
 def verify_features(nodes, df_nodes):
     feature_keys = set(df_nodes.columns)  # Assuming df_nodes has consistent columns
     for node in nodes:
@@ -338,7 +339,7 @@ def verify_features(nodes, df_nodes):
             return node, missing, extra
     return None, None, None
 
-def build_and_save_graphs_with_features(index: int):
+def build_and_save_graphs_with_features(index: int, max_foots: int):
     df_train = pd.read_csv('data/csvs/train.csv')
     df_nodes = pd.read_csv('data/csvs/nodes.csv')
     # Normalize the screw_angle and x, y coordinates
@@ -391,18 +392,28 @@ def build_and_save_graphs_with_features(index: int):
         nodes_dict[node] = i
     # Assuming get_edge_data_from_db(index) is a function you've defined to get the edge data
     df_edges = get_edge_data_from_db(index)
+    df_nodes['foothold_count'] = 0
     df_edges = df_edges.sort_values(by='edge_index')
+
     for _, edge_row in df_edges.iterrows():
+        start_node = edge_row['start_node']
         foothold_counter = 0    
-        features_temp= [i[1]['coordinates'] for i in G.nodes(data=True)]
+        features_temp = [i[1]['coordinates'] for i in G.nodes(data=True)]
         for i in G.nodes(data=True):
-            if i[0] == edge_row['start_node']:
+            if i[0] == start_node:
                 start_node_coord = i[1]['coordinates']
                 break
+        # print(start_node_coord)
         for i in features_temp: 
             if i[1] < start_node_coord[1] and np.linalg.norm(np.array(i) - np.array(start_node_coord)) <= 80 :
                 foothold_counter += 1
-        G.add_edge(edge_row['start_node'], edge_row['end_node'], footholds=foothold_counter)
+        df_nodes.at[start_node, 'foothold_count'] = foothold_counter
+        G.add_edge(edge_row['start_node'], edge_row['end_node'])
+    max_foothold_count = df_nodes['foothold_count'].max()
+    df_nodes['foothold_count'] = df_nodes['foothold_count'] / 17 
+    for node in G.nodes():
+        node_features = df_nodes.loc[node]
+        G.nodes[node].update(node_features.to_dict())
     adjacency_matrix = nx.adjacency_matrix(G)
     save_npz(f"data/npzs/adjacency_mtrx/{index}.npz", adjacency_matrix)
     edge_index = adjacency_to_edge_index(adjacency_matrix.todense())
@@ -422,28 +433,30 @@ def build_and_save_graphs_with_features(index: int):
     
     ordered_edges = df_edges[['start_node', 'end_node']].values.tolist()
     indexed_edges = []
-    foothold_attributes = []
-    for start_node, end_node in ordered_edges:
-    # Retrieve the foothold attribute from the edge
-        foothold = G[start_node][end_node]['footholds'] if G.has_edge(start_node, end_node) else 0
-        foothold_attributes.append(foothold)
-    foothold_attribute_tensor = torch.tensor(foothold_attributes, dtype=torch.long)
-    torch.save(foothold_attribute_tensor, f"data/tensors/foothold_attributes_{index}.pt")
-
     for start, end in ordered_edges:
         edge_tuple = (nodes_dict[start], nodes_dict[end])
         if edge_tuple not in indexed_edges:
             indexed_edges.append(edge_tuple)
+    if len(G.edges(data=True)) == 1: 
+        max_foothold_count = 0
     edge_index_tensor_ordered = torch.tensor(indexed_edges, dtype=torch.long)
     torch.save(edge_index_tensor_ordered, f"data/tensors/edge_sequence_{index}.pt")
+    # global max_foots
+
     # save also the difficulty and nameto a json 
+    if max_foothold_count > max_foots:
+        max_foots = max_foothold_count
+        print(max_foots)
     climb_info = {'name': climb_name, 'difficulty': climb_difficulty}
     with open(f"data/jsons/climb_info/{index}.json", "w") as file:
         json.dump(climb_info, file)
-    return G
-
+    return max_foots
 if __name__ == "__main__":
     index = 4210
+    jo = 0 
+    max_foots = 0
     for i in tqdm(range(0, index+1)):
-        build_and_save_graphs_with_features(i)
+        temp = build_and_save_graphs_with_features(i, max_foots)
+        if temp:
+            max_foots = temp
         # exit()
