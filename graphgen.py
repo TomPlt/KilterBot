@@ -360,8 +360,7 @@ def build_and_save_graphs_with_features(index: int, max_foots: int):
     for col in hold_type_columns:
         if col not in df_train.columns:
             df_train[col] = 0
-
-   
+  
     # Create interaction terms for norm_screw_angle and SKU dummies
     for sku_col in [col for col in df_nodes.columns if col.startswith('sku_')]:
         df_nodes[f'{sku_col}_angle_interaction'] = df_nodes[sku_col] * df_nodes['norm_screw_angle']
@@ -405,12 +404,12 @@ def build_and_save_graphs_with_features(index: int, max_foots: int):
                 break
         # print(start_node_coord)
         for i in features_temp: 
-            if i[1] < start_node_coord[1] and np.linalg.norm(np.array(i) - np.array(start_node_coord)) <= 80 :
+            if i[1] < start_node_coord[1] and np.linalg.norm(np.array(i) - np.array(start_node_coord)) <= 45:
                 foothold_counter += 1
         df_nodes.at[start_node, 'foothold_count'] = foothold_counter
         G.add_edge(edge_row['start_node'], edge_row['end_node'])
     max_foothold_count = df_nodes['foothold_count'].max()
-    df_nodes['foothold_count'] = df_nodes['foothold_count'] / 17 
+    df_nodes['foothold_count'] = df_nodes['foothold_count'] / 13 
     for node in G.nodes():
         node_features = df_nodes.loc[node]
         G.nodes[node].update(node_features.to_dict())
@@ -427,7 +426,6 @@ def build_and_save_graphs_with_features(index: int, max_foots: int):
     except ValueError as e:
         print(f"Error constructing feature array: {e}")
         raise
-    # print(df_edges)
     node_feature_matrix = csr_matrix(node_feature_array)
     save_npz(f"data/npzs/node_feature_mtrx/{index}.npz", node_feature_matrix)
     
@@ -441,9 +439,6 @@ def build_and_save_graphs_with_features(index: int, max_foots: int):
         max_foothold_count = 0
     edge_index_tensor_ordered = torch.tensor(indexed_edges, dtype=torch.long)
     torch.save(edge_index_tensor_ordered, f"data/tensors/edge_sequence_{index}.pt")
-    # global max_foots
-
-    # save also the difficulty and nameto a json 
     if max_foothold_count > max_foots:
         max_foots = max_foothold_count
         print(max_foots)

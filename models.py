@@ -76,7 +76,7 @@ class SimpleGNN(torch.nn.Module):
     def __init__(self, input_dim, hidden_dim1, hidden_dim2, dropout_rate=0.5):
         super(SimpleGNN, self).__init__()
         self.dropout_rate = dropout_rate
-        self.conv1 = GCNConv(input_dim, hidden_dim1, K=2)
+        self.conv1 = ChebConv(input_dim, hidden_dim1, K=2)
         self.conv2 = GATConv(hidden_dim1, hidden_dim2)
         self.lin1 = torch.nn.Linear(hidden_dim2, 1)
         self.bn1 = torch.nn.BatchNorm1d(hidden_dim1)
