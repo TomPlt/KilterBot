@@ -362,8 +362,8 @@ def build_and_save_graphs_with_features(index: int, max_foots: int):
             df_train[col] = 0
   
     # Create interaction terms for norm_screw_angle and SKU dummies
-    for sku_col in [col for col in df_nodes.columns if col.startswith('sku_')]:
-        df_nodes[f'{sku_col}_angle_interaction'] = df_nodes[sku_col] * df_nodes['norm_screw_angle']
+    # for sku_col in [col for col in df_nodes.columns if col.startswith('sku_')]:
+    #     df_nodes[f'{sku_col}_angle_interaction'] = df_nodes[sku_col] * df_nodes['norm_screw_angle']
     
     row = df_train.loc[index]
     climbs = pd.read_csv('data/csvs/climbs.csv')

@@ -33,7 +33,7 @@ def calculate_mean_loss_per_bin(true_values, predicted_values, num_bins=10):
     return bins, mean_losses
 def run_training_and_evaluation(train_loader, test_loader, hidden_dim1=256, hidden_dim2=128, lr=0.01, dropout_rate=0.5, weight_decay=5e-4, num_epochs=100):
     # mlflow.log_param("num_epochs", num_epochs)
-    input_dim = 101
+    input_dim = 55
     # mlflow.log_param("hidden_dim1", hidden_dim1)
     # mlflow.log_param("hidden_dim2", hidden_dim2)
     # mlflow.log_param("rnn_hidden_dim", rnn_hidden_dim)
