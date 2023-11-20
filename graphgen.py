@@ -407,7 +407,7 @@ def build_and_save_graphs_with_features(index: int, max_foots: int):
             if i[1] < start_node_coord[1] and np.linalg.norm(np.array(i) - np.array(start_node_coord)) <= 45:
                 foothold_counter += 1
         df_nodes.at[start_node, 'foothold_count'] = foothold_counter
-        G.add_edge(edge_row['start_node'], edge_row['end_node'])
+        G.add_edge(edge_row['start_node'], edge_row['end_node'])  
     max_foothold_count = df_nodes['foothold_count'].max()
     df_nodes['foothold_count'] = df_nodes['foothold_count'] / 13 
     for node in G.nodes():
