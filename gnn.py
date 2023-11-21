@@ -18,12 +18,34 @@ from torch_geometric.data import Data
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, GATConv, global_mean_pool
 from torch_geometric.data import Data
+from torch_geometric.loader import DataLoader
 from models import *
 
 class MtrxType(Enum):
     ADJACENCY_MATRIX = 0
     EDGE_SEQUENCE = 1
     NODE_FEATURE_MATRIX = 2
+
+def calculate_mean_loss_per_bin(true_values, predicted_values, num_bins=10):
+    # Binning the true values
+    bins = np.linspace(min(true_values), max(true_values), num_bins + 1)
+    bin_indices = np.digitize(true_values, bins) - 1  # -1 to make bins 0-indexed
+
+    mean_losses = []
+    for i in range(num_bins):
+        # Extract values in each bin
+        indices = [index for index, bin_index in enumerate(bin_indices) if bin_index == i]
+        bin_true_values = [true_values[index] for index in indices]
+        bin_predicted_values = [predicted_values[index] for index in indices]
+        
+        # Calculate mean loss (mean absolute error) for each bin
+        if bin_true_values:
+            mean_loss = np.mean([abs(true - pred) for true, pred in zip(bin_true_values, bin_predicted_values)])
+            mean_losses.append(mean_loss)
+        else:
+            mean_losses.append(0)
+
+    return bins, mean_losses
 
 def generate_graphs(use_features=False):
     # List to store generated graphs
@@ -149,7 +171,58 @@ def adjacency_to_edge_index(adjacency_matrix):
     edge_index = np.stack((src, dst), axis=0)
     return torch.tensor(edge_index, dtype=torch.long)
 
-def data_loading():
+def data_loading_all():
+    # load data without splitting
+    df_train = pd.read_csv('data/csvs/train.csv')
+    difficulties = df_train['difficulty'].to_numpy()
+    uuids = df_train['uuid'].to_numpy()
+    df_climbs = pd.read_csv('data/csvs/climbs.csv')
+    indices = np.arange(len(difficulties))
+    valid_indices = []
+    adjacency_matrices = []  # This will hold the adjacency matrices
+    node_feature_matrices = []  # This will hold the node feature matrices
+    edge_sequence_list = []  # This will hold the edge sequences
+    valid_difficulties = []
+    print("Loading data...")
+    for i in indices:
+        try: 
+            node_feature_matrix = load_npz(f'data/npzs/node_feature_mtrx/{i}.npz').todense()
+            node_feature_matrices.append(node_feature_matrix)
+            adjacency_matrix = load_npz(f'data/npzs/adjacency_mtrx/{i}.npz').todense()
+            adjacency_matrices.append(adjacency_matrix)
+            edge_index = adjacency_to_edge_index(adjacency_matrix)
+            edge_seq = torch.load(f'data/tensors/edge_sequence_{i}.pt')
+            edge_sequence_list.append(edge_seq)
+            x = torch.tensor(node_feature_matrix, dtype=torch.float)
+            assert edge_seq.shape[0] == edge_index.shape[1], "Mismatch in number of edges vs edge sequence."
+            assert x.shape[0] == adjacency_matrix.shape[0], "Mismatch in number of nodes vs features."
+            assert edge_index.max() < x.shape[0], "edge_index contains node indices not in feature matrix."
+            valid_indices.append(i)
+            valid_difficulties.append(difficulties[i])
+        except FileNotFoundError:
+            pass
+    train_indices, test_indices = train_test_split(
+    valid_indices, test_size=0.2, random_state=1
+    )
+    index_mapping = {v: k for k, v in enumerate(valid_indices)}
+    # valid_difficulties = (np.array(valid_difficulties) - np.mean(valid_difficulties))/ np.std(valid_difficulties)
+    def generate_data_list(indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, difficulties):
+        data_list = []
+        for idx in indices:
+            uuid = uuids[idx]
+            idx = index_mapping[idx]
+            edge_index = adjacency_to_edge_index(adjacency_matrices[idx])
+            edge_attr = edge_sequence_list[idx]
+            x = torch.tensor(node_feature_matrices[idx], dtype=torch.float)
+            y = torch.tensor([difficulties[idx]], dtype=torch.float)
+            data_object = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y, uuid=uuid)
+            data_list.append(data_object)
+        return data_list
+    train_data_list = generate_data_list(train_indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, valid_difficulties)
+    test_data_list = generate_data_list(test_indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, valid_difficulties)
+    return train_data_list, test_data_list
+    
+def data_loading(n_splits=5):
     df_train = pd.read_csv('data/csvs/train.csv')
     difficulties = df_train['difficulty'].to_numpy()
     indices = np.arange(len(difficulties))
@@ -197,7 +270,7 @@ def data_loading():
             data_list.append(data_object)
         return data_list
     
-    kf = KFold(n_splits=5, shuffle=True, random_state=1)
+    kf = KFold(n_splits=n_splits, shuffle=True, random_state=1)
     fold_data_lists = []
     
     for train_idx, test_idx in kf.split(indices):
@@ -262,76 +335,121 @@ def evaluate(data, model, criterion):
         loss = criterion(predictions, data.y)
     return loss.item()
 
-def run_training_and_evaluation(num_epochs=100, lr=0.005, save_path='best_model.pt'):
-    mlflow.set_experiment("Default")
+def run_training_and_evaluation(train_loader, test_loader, hidden_dim1=256, hidden_dim2=128, hidden_dim3=64, lr=0.01, dropout_rate1=0.5, dropout_rate2=0.5, weight_decay=5e-4, num_epochs=200):
+    # mlflow.log_param("num_epochs", num_epochs)
+    # mlflow.log_param("input_dim", 55)
+    # mlflow.log_param("hidden_dim1", hidden_dim1)
+    # mlflow.log_param("hidden_dim2", hidden_dim2)
+    # mlflow.log_param("rnn_hidden_dim", rnn_hidden_dim)
+    input_dim = 55
+    model = SimpleGNN(input_dim, hidden_dim1, hidden_dim2, hidden_dim3, dropout_rate1, dropout_rate2)
+    optimizer = torch.optim.AdamW(model.parameters(), lr, weight_decay=weight_decay)
+    # criterion is RMSE loss
+    mse_loss_criterion = torch.nn.MSELoss()  # Mean Squared Error for regression
+    l1_loss_criterion = torch.nn.L1Loss()    # Mean Absolute Error for validation
 
-    with mlflow.start_run():
-        # Log parameters
-        mlflow.log_param("num_epochs", num_epochs)
-        mlflow.log_param("learning_rate", lr) 
-        # Split data into training and testing sets
-        train_data_list, test_data_list = data_loading()
+    best_val_loss = float('inf')
+    val_loss_list = []
+    train_loss_list = []
+    true_values = []
+    predicted_values = []
+    df_climb = pd.read_csv('data/csvs/climbs.csv')
 
-        # Get the input dimension from the node features of the first Data object in the train_data_list
-        input_dim = train_data_list[0].x.size(1)
+    for epoch in tqdm(range(num_epochs), desc='Epochs'):
+        total_train_loss = 0.0
+        model.train()
 
-        # Initialize model, optimizer, and loss function
-        hidden_dim1 = 512
-        hidden_dim2 = 128
-        mlflow.log_param("hidden_dim1", hidden_dim1)
-        mlflow.log_param("hidden_dim2", hidden_dim2)
-        mlflow.log_param("Model", "SequentialGNN LSTM")
-        model = SimpleGNN(input_dim=input_dim, hidden_dim1=hidden_dim1, hidden_dim2=hidden_dim2, dropout_rate=0.35)
-        print(model)
-        optimizer = torch.optim.Adam(model.parameters(), lr)
-        criterion = torch.nn.L1Loss()   # Mean Squared Error for regression
+        # Training phase
+        for batch in train_loader:
+            optimizer.zero_grad()
+            out = model(batch).squeeze(-1)
+            loss = mse_loss_criterion(out, batch.y)
+            loss.backward()
+            optimizer.step()
+            total_train_loss += loss.item() * batch.num_graphs
 
-        best_val_loss = float('inf')
-        val_loss_list = []
-        train_loss_list = []
-        print("Training...")
+        avg_train_loss = total_train_loss / len(train_loader.dataset)
+        train_loss_list.append(avg_train_loss)
 
-        for epoch in tqdm(range(num_epochs)):
-            total_train_loss = 0.0
-            model.train()
-            for data in train_data_list:  # Directly iterate over pre-processed data
-                optimizer.zero_grad()
-                out = model(data).squeeze(-1)
-                loss = criterion(out, data.y)
-                loss.backward()
-                optimizer.step()
-                total_train_loss += loss.item()
+        total_val_loss = 0.0
+        model.eval()
+        prediction_details = []
+        # Validation phase
+        for batch in test_loader:
+            with torch.no_grad():
+                out = model(batch).squeeze(-1)
+                loss = l1_loss_criterion(out, batch.y)
+                total_val_loss += loss.item() * batch.num_graphs
+                true_values.extend(batch.y.tolist())
+                predicted_values.extend(out.tolist())
+                for i in range(batch.num_graphs):
+                    individual_loss = l1_loss_criterion(out[i], batch.y[i]).item()
+                    name = df_climb.query(f"uuid == '{batch.uuid[i]}'").name.values[0]
+                    prediction_details.append({
+                        'name': name, 
+                        'actual': batch.y[i].item(), 
+                        'predicted': out[i].item(), 
+                        'loss': individual_loss
+                    })
 
-            avg_train_loss = total_train_loss / len(train_data_list)
-            total_val_loss = 0.0
-            model.eval()
-            with torch.no_grad():  # No need to compute gradients for validation data
-                for data in test_data_list:
-                    out = model(data).squeeze(-1)
-                    loss = criterion(out, data.y)
-                    total_val_loss += loss.item()
+        avg_val_loss = total_val_loss / len(test_loader.dataset)
+        val_loss_list.append(avg_val_loss)
 
-            avg_val_loss = total_val_loss / len(test_data_list)
-            print(f'Epoch: {epoch}, Training Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}')
-            # Log metrics for this epoch with MLflow
-            mlflow.log_metric("train_loss", avg_train_loss, step=epoch)
-            mlflow.log_metric("val_loss", avg_val_loss, step=epoch)
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+#            torch.save(model.state_dict(), 'best_model.pt')
+        # mlflow.log_metric("train_loss", avg_train_loss, step=epoch)
+        # mlflow.log_metric("val_loss", avg_val_loss, step=epoch)
 
-            # Saving the best model based on validation loss
-            if avg_val_loss < best_val_loss:
-                best_val_loss = avg_val_loss
-                torch.save(model.state_dict(), save_path)
-                print(f"Best model saved with validation loss: {best_val_loss:.4f}")
+    bins, mean_losses = calculate_mean_loss_per_bin(true_values, predicted_values)
+   # Plotting True Values vs Predicted Values
+    plt.figure(figsize=(10, 5))
+    plt.scatter(true_values, predicted_values, alpha=0.5)
+    plt.title('True vs Predicted Values')
+    plt.xlabel('True Values')
+    plt.ylabel('Predicted Values')
+    plt.grid(True)
+    plt.savefig("true_vs_pred.png")
+    # mlflow.log_artifact("true_vs_pred.png")
 
-            # Append statistics for later analysis
-            train_loss_list.append(avg_train_loss)
-            val_loss_list.append(avg_val_loss)
-        mlflow.end_run()
-
-    model.load_state_dict(torch.load(save_path))
-    return model, val_loss_list, train_loss_list
-
+    # Plotting Mean Loss by Bins
+    plt.figure(figsize=(10, 5))
+    plt.bar(bins[:-1], mean_losses, width=np.diff(bins), align="edge", edgecolor='black')
+    plt.title('Mean Loss by Bins of True Values')
+    plt.xlabel('Bins of True Values')
+    plt.ylabel('Mean Loss')
+    plt.grid(True)
+    plt.savefig("mean_loss_by_bins.png")
+    # mlflow.log_artifact("mean_loss_by_bins.png")
+    plt.close('all')
+    top_10_worst_predictions = sorted(prediction_details, key=lambda x: x['loss'], reverse=True)[:10]
+    
+    for pred in top_10_worst_predictions:
+        print(f"{pred['name']}, Actual: {pred['actual']}, Predicted: {pred['predicted']}, Loss: {pred['loss']}")
+    return best_val_loss
 
 if __name__ == "__main__":
-    # graph_preprocessing()
-    model, val_loss, train_loss = run_training_and_evaluation()
+    fold_val_losses = []
+    n_splits = 2
+    train_data, test_data = data_loading_all()
+
+    mlflow.set_experiment("Tuned Model")
+    fold_data_lists = data_loading()
+    fold_val_losses = []
+    hidden_dim1 = 128
+    hidden_dim2 = 256
+    hidden_dim3 = 128
+    lr = 0.0014
+    dropout_rate1 = dropout_rate2 = 0.47
+    weight_decay = 0.00045
+
+    train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
+    test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
+
+    # Run the training and validation process for each fold
+    best_val_loss = run_training_and_evaluation(
+        train_loader, test_loader,
+        hidden_dim1, hidden_dim2, hidden_dim3,
+        lr, dropout_rate1, dropout_rate2, weight_decay, num_epochs=10)
+    mlflow.log_metric("avg_val_loss", best_val_loss)
+
