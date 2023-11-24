@@ -1,10 +1,12 @@
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, ChebConv, GATConv, global_mean_pool, TopKPooling
+from torch_geometric.nn import GCNConv, ChebConv, GATConv, TransformerConv, GlobalAttention, global_mean_pool, global_max_pool
+from torch_geometric.nn.aggr import AttentionalAggregation
 from torch_geometric.utils import to_dense_adj, dense_to_sparse
 from torch_geometric.data import Data
 from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence, pad_packed_sequence
 from torch_geometric.utils import get_laplacian
+from torch.nn import Linear, Sequential, ReLU, BatchNorm1d
 
 def aggregate_edge_features_to_nodes(rnn_out, edge_index, num_nodes):
     agg_node_features = torch.zeros((num_nodes, rnn_out.size(-1)), device=rnn_out.device)
@@ -73,33 +75,37 @@ class SequentialLSTMGNN(torch.nn.Module):
         return x
     
 class SimpleGNN(torch.nn.Module):
-    def __init__(self, input_dim, hidden_dim1, hidden_dim2, hidden_dim3, dropout_rate1, dropout_rate2):
+    def __init__(self, input_dim, hidden_dim1, hidden_dim2, hidden_dim3, conv_types, k_values, dropout_rate1, dropout_rate2):
         super(SimpleGNN, self).__init__()
         self.dropout_rate1 = dropout_rate1
         self.dropout_rate2 = dropout_rate2
-        self.conv1 = ChebConv(input_dim, hidden_dim1, K=2)
-        self.conv2 = GATConv(hidden_dim1, hidden_dim2)
-        self.conv3 = GATConv(hidden_dim2, hidden_dim3)
+        self.conv1 = conv_types[0](input_dim, hidden_dim1, K=k_values[0])
+        self.conv2 = conv_types[1](hidden_dim1, hidden_dim2, K=k_values[1])
+        self.conv3 = conv_types[2](hidden_dim2, hidden_dim3, K=k_values[2])
         self.lin1 = torch.nn.Linear(hidden_dim3, 1)
         self.bn1 = torch.nn.BatchNorm1d(hidden_dim1)
         self.bn2 = torch.nn.BatchNorm1d(hidden_dim2)
         self.bn3 = torch.nn.BatchNorm1d(hidden_dim3)
+        self.shortcut = torch.nn.Linear(input_dim, hidden_dim3)
 
     def forward(self, data):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
-        # edge_index = edge_attr.reshape(2, -1)
+        edge_index = edge_attr.reshape(2, -1) # same as edge_index but ordered, should not be important as the order should not matter
+        identity = x 
         x = self.conv1(x, edge_index)
         x = self.bn1(x)
-        x = F.relu(x)  
+        x = F.leaky_relu(x, negative_slope=0.01)  
         x = F.dropout(x, training=self.training, p=self.dropout_rate1)
         x = self.conv2(x, edge_index)
         x = self.bn2(x)
-        x = F.relu(x)
+        x = F.leaky_relu(x, negative_slope=0.01)  
         x = F.dropout(x, training=self.training, p=self.dropout_rate2)
         x = self.conv3(x, edge_index)
         x = self.bn3(x)
-        x = F.relu(x)
-        x = global_mean_pool(x, data.batch)
+        x = F.leaky_relu(x, negative_slope=0.01)
+        identity = self.shortcut(identity)
+        x += identity  
+        x = global_max_pool(x, data.batch)  
         x = self.lin1(x)
         return x
 

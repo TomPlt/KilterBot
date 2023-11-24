@@ -335,26 +335,17 @@ def evaluate(data, model, criterion):
         loss = criterion(predictions, data.y)
     return loss.item()
 
-def run_training_and_evaluation(train_loader, test_loader, hidden_dim1=256, hidden_dim2=128, hidden_dim3=64, lr=0.01, dropout_rate1=0.5, dropout_rate2=0.5, weight_decay=5e-4, num_epochs=200):
-    # mlflow.log_param("num_epochs", num_epochs)
-    # mlflow.log_param("input_dim", 55)
-    # mlflow.log_param("hidden_dim1", hidden_dim1)
-    # mlflow.log_param("hidden_dim2", hidden_dim2)
-    # mlflow.log_param("rnn_hidden_dim", rnn_hidden_dim)
-    input_dim = 55
-    model = SimpleGNN(input_dim, hidden_dim1, hidden_dim2, hidden_dim3, dropout_rate1, dropout_rate2)
+def run_training_and_evaluation(conv_types, k_values, train_loader, test_loader, hidden_dim1=256, hidden_dim2=128, hidden_dim3=64, lr=0.01, dropout_rate1=0.5, dropout_rate2=0.5, weight_decay=5e-4, num_epochs=200, mlflow_run=None):
+    input_dim = next(iter(train_loader)).x.shape[1]
+    model = SimpleGNN(input_dim, hidden_dim1, hidden_dim2, hidden_dim3, conv_types, k_values, dropout_rate1, dropout_rate2)
     optimizer = torch.optim.AdamW(model.parameters(), lr, weight_decay=weight_decay)
-    # criterion is RMSE loss
     mse_loss_criterion = torch.nn.MSELoss()  # Mean Squared Error for regression
     l1_loss_criterion = torch.nn.L1Loss()    # Mean Absolute Error for validation
-
     best_val_loss = float('inf')
     val_loss_list = []
     train_loss_list = []
     true_values = []
     predicted_values = []
-    df_climb = pd.read_csv('data/csvs/climbs.csv')
-
     for epoch in tqdm(range(num_epochs), desc='Epochs'):
         total_train_loss = 0.0
         model.train()
@@ -382,27 +373,18 @@ def run_training_and_evaluation(train_loader, test_loader, hidden_dim1=256, hidd
                 total_val_loss += loss.item() * batch.num_graphs
                 true_values.extend(batch.y.tolist())
                 predicted_values.extend(out.tolist())
-                for i in range(batch.num_graphs):
-                    individual_loss = l1_loss_criterion(out[i], batch.y[i]).item()
-                    name = df_climb.query(f"uuid == '{batch.uuid[i]}'").name.values[0]
-                    prediction_details.append({
-                        'name': name, 
-                        'actual': batch.y[i].item(), 
-                        'predicted': out[i].item(), 
-                        'loss': individual_loss
-                    })
-
         avg_val_loss = total_val_loss / len(test_loader.dataset)
         val_loss_list.append(avg_val_loss)
 
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
 #            torch.save(model.state_dict(), 'best_model.pt')
-        # mlflow.log_metric("train_loss", avg_train_loss, step=epoch)
-        # mlflow.log_metric("val_loss", avg_val_loss, step=epoch)
+        if mlflow_run:
+            mlflow.log_metric("train_loss", avg_train_loss, step=epoch)
+            mlflow.log_metric("val_loss", avg_val_loss, step=epoch)
 
     bins, mean_losses = calculate_mean_loss_per_bin(true_values, predicted_values)
-   # Plotting True Values vs Predicted Values
+    # Plotting True Values vs Predicted Values
     plt.figure(figsize=(10, 5))
     plt.scatter(true_values, predicted_values, alpha=0.5)
     plt.title('True vs Predicted Values')
@@ -410,8 +392,6 @@ def run_training_and_evaluation(train_loader, test_loader, hidden_dim1=256, hidd
     plt.ylabel('Predicted Values')
     plt.grid(True)
     plt.savefig("true_vs_pred.png")
-    # mlflow.log_artifact("true_vs_pred.png")
-
     # Plotting Mean Loss by Bins
     plt.figure(figsize=(10, 5))
     plt.bar(bins[:-1], mean_losses, width=np.diff(bins), align="edge", edgecolor='black')
@@ -420,36 +400,50 @@ def run_training_and_evaluation(train_loader, test_loader, hidden_dim1=256, hidd
     plt.ylabel('Mean Loss')
     plt.grid(True)
     plt.savefig("mean_loss_by_bins.png")
-    # mlflow.log_artifact("mean_loss_by_bins.png")
     plt.close('all')
-    top_10_worst_predictions = sorted(prediction_details, key=lambda x: x['loss'], reverse=True)[:10]
-    
-    for pred in top_10_worst_predictions:
-        print(f"{pred['name']}, Actual: {pred['actual']}, Predicted: {pred['predicted']}, Loss: {pred['loss']}")
+ 
+    if mlflow_run: 
+        mlflow.log_param("lr", lr)
+        mlflow.log_param("dropout_rate1", dropout_rate1)
+        mlflow.log_param("dropout_rate2", dropout_rate2)
+        mlflow.log_param("weight_decay", weight_decay)
+        mlflow.log_param("num_epochs", num_epochs)
+        mlflow.log_param("input_dim", input_dim)
+        mlflow.log_param("hidden_dim1", hidden_dim1)
+        mlflow.log_param("hidden_dim2", hidden_dim2)
+        mlflow.log_param("hidden_dim3", hidden_dim3)
+        mlflow.log_artifact("mean_loss_by_bins.png")
+        mlflow.log_artifact("true_vs_pred.png")
+        top_10_worst_predictions = sorted(prediction_details, key=lambda x: x['loss'], reverse=True)[:10]
+        for pred in top_10_worst_predictions:
+            print(f"{pred['name']}, Actual: {pred['actual']}, Predicted: {pred['predicted']}, Loss: {pred['loss']}")
+        mlflow.log_metric("top_10_worst_predictions", top_10_worst_predictions)
+
+
+
     return best_val_loss
 
 if __name__ == "__main__":
     fold_val_losses = []
-    n_splits = 2
     train_data, test_data = data_loading_all()
 
     mlflow.set_experiment("Tuned Model")
     fold_data_lists = data_loading()
     fold_val_losses = []
     hidden_dim1 = 128
-    hidden_dim2 = 256
-    hidden_dim3 = 128
-    lr = 0.0014
-    dropout_rate1 = dropout_rate2 = 0.47
-    weight_decay = 0.00045
-
+    hidden_dim2 = 128
+    hidden_dim3 = 512
+    lr = 0.0016
+    dropout_rate1 = dropout_rate2 = 0.4
+    weight_decay = 0.00087
+    conv_types = [ChebConv, ChebConv, TransformerConv]
+    k_values = [2, 2, 2]
     train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
     test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
 
-    # Run the training and validation process for each fold
     best_val_loss = run_training_and_evaluation(
-        train_loader, test_loader,
+        conv_types, k_values, train_loader, test_loader,
         hidden_dim1, hidden_dim2, hidden_dim3,
-        lr, dropout_rate1, dropout_rate2, weight_decay, num_epochs=10)
+        lr, dropout_rate1, dropout_rate2, weight_decay, num_epochs=200)
     mlflow.log_metric("avg_val_loss", best_val_loss)
 
