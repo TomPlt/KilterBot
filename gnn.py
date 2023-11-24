@@ -444,6 +444,6 @@ if __name__ == "__main__":
     best_val_loss = run_training_and_evaluation(
         conv_types, k_values, train_loader, test_loader,
         hidden_dim1, hidden_dim2, hidden_dim3,
-        lr, dropout_rate1, dropout_rate2, weight_decay, num_epochs=200)
+        lr, dropout_rate1, dropout_rate2, weight_decay, num_epochs=200, mlflow_run=True)
     mlflow.log_metric("avg_val_loss", best_val_loss)
 
