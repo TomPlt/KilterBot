@@ -17,6 +17,9 @@ import ast
 import sqlite3
 import torch
 from scipy.sparse import csr_matrix
+from torch_geometric.utils import from_networkx
+from torch_geometric.nn import Node2Vec
+from torch_geometric.data import Data
 from gnn import adjacency_to_edge_index
 
 
@@ -361,10 +364,6 @@ def build_and_save_graphs_with_features(index: int, max_foots: int):
         if col not in df_train.columns:
             df_train[col] = 0
   
-    # Create interaction terms for norm_screw_angle and SKU dummies
-    # for sku_col in [col for col in df_nodes.columns if col.startswith('sku_')]:
-    #     df_nodes[f'{sku_col}_angle_interaction'] = df_nodes[sku_col] * df_nodes['norm_screw_angle']
-    
     row = df_train.loc[index]
     climbs = pd.read_csv('data/csvs/climbs.csv')
     # get the name and difficulty of the climb matching the uuid
@@ -404,15 +403,17 @@ def build_and_save_graphs_with_features(index: int, max_foots: int):
                 break
         # print(start_node_coord)
         for i in features_temp: 
-            if i[1] < start_node_coord[1] and np.linalg.norm(np.array(i) - np.array(start_node_coord)) <= 45:
+            if i[1] < start_node_coord[1] and np.linalg.norm(np.array(i) - np.array(start_node_coord)) <= 45: # TODO: also fine tune this later? 
                 foothold_counter += 1
         df_nodes.at[start_node, 'foothold_count'] = foothold_counter
         G.add_edge(edge_row['start_node'], edge_row['end_node'])  
     max_foothold_count = df_nodes['foothold_count'].max()
     df_nodes['foothold_count'] = df_nodes['foothold_count'] / 13 
+    print(G.nodes())
     for node in G.nodes():
         node_features = df_nodes.loc[node]
         G.nodes[node].update(node_features.to_dict())
+    print(G.nodes())
     adjacency_matrix = nx.adjacency_matrix(G)
     save_npz(f"data/npzs/adjacency_mtrx/{index}.npz", adjacency_matrix)
     edge_index = adjacency_to_edge_index(adjacency_matrix.todense())
@@ -426,9 +427,10 @@ def build_and_save_graphs_with_features(index: int, max_foots: int):
     except ValueError as e:
         print(f"Error constructing feature array: {e}")
         raise
+    
     node_feature_matrix = csr_matrix(node_feature_array)
     save_npz(f"data/npzs/node_feature_mtrx/{index}.npz", node_feature_matrix)
-    
+
     ordered_edges = df_edges[['start_node', 'end_node']].values.tolist()
     indexed_edges = []
     for start, end in ordered_edges:
@@ -445,13 +447,52 @@ def build_and_save_graphs_with_features(index: int, max_foots: int):
     climb_info = {'name': climb_name, 'difficulty': climb_difficulty}
     with open(f"data/jsons/climb_info/{index}.json", "w") as file:
         json.dump(climb_info, file)
+    """
+    ## Node Embeddings 
+    print("Original edge_index:", edge_index)
+    print("Sh#ape of original edge_index:", edge_index.shape)
+
+    transposed_ordered_edges = torch.tensor(ordered_edges).t()
+
+    data = Data(edge_index=edge_index, num_nodes=G.number_of_nodes())
+    batch = torch.arange(data.num_nodes)
+    # Instantiate Node2Vec model with the correct number of nodes
+    node2vec_model = Node2Vec(
+        edge_index=data.edge_index, 
+        embedding_dim=8, 
+        walk_length=4, 
+        context_size=2, 
+        walks_per_node=5,
+        p=1, 
+        q=1, 
+        num_nodes=data.num_nodes
+    )
+    optimizer = torch.optim.Adam(node2vec_model.parameters(), lr=0.01)
+
+    node2vec_model.train()
+    for epoch in range(100):
+        total_loss = 0
+        # Generate random walks for all nodes
+        pos_rw, neg_rw = node2vec_model.sample(batch)
+        optimizer.zero_grad()
+        loss = node2vec_model.loss(pos_rw, neg_rw)
+        loss.backward()
+        optimizer.step()
+        total_loss += loss.item()
+    print(f'Epoch {epoch}, Loss: {total_loss / data.num_nodes}')
+    # exit()
+    with torch.no_grad():
+        node_embeddings = node2vec_model().detach().numpy()
+    # Combine Node2Vec embeddings with existing features
+    node_feature_array = np.array(features_list)
+    combined_features = np.hstack((node_feature_array, node_embeddings))
+    node_feature_matrix = csr_matrix(combined_features)"""
+    save_npz(f"data/npzs/node_feature_mtrx/{index}.npz", node_feature_matrix)    
     return max_foots
 if __name__ == "__main__":
     index = 4210
-    jo = 0 
     max_foots = 0
     for i in tqdm(range(0, index+1)):
         temp = build_and_save_graphs_with_features(i, max_foots)
         if temp:
             max_foots = temp
-        # exit()

@@ -19,16 +19,16 @@ def objective(trial):
         "ChebConv": lambda in_channels, out_channels, K=2: ChebConv(in_channels, out_channels, K=K),
         "TransformerConv": TransformerConv
     }
-    k_default = 1  # Default value for K
-    conv_type1 = trial.suggest_categorical("conv_type1", list(conv_layer_choices.keys()))
-    conv_type2 = trial.suggest_categorical("conv_type2", list(conv_layer_choices.keys()))
-    conv_type3 = trial.suggest_categorical("conv_type3", list(conv_layer_choices.keys()))
+    # k_default = 1  # Default value for K
+    # conv_type1 = trial.suggest_categorical("conv_type1", list(conv_layer_choices.keys()))
+    # conv_type2 = trial.suggest_categorical("conv_type2", list(conv_layer_choices.keys()))
+    # conv_type3 = trial.suggest_categorical("conv_type3", list(conv_layer_choices.keys()))
 
-    conv_types = [conv_layer_choices[conv_type1], conv_layer_choices[conv_type2], conv_layer_choices[conv_type3]]
-    k_values = [k_default if conv != "ChebConv" else 2 for conv in [conv_type1, conv_type2, conv_type3]]
+    # conv_types = [conv_layer_choices[conv_type1], conv_layer_choices[conv_type2], conv_layer_choices[conv_type3]]
+    # k_values = [k_default if conv != "ChebConv" else 2 for conv in [conv_type1, conv_type2, conv_type3]]
 
     conv_types = [ChebConv, ChebConv, TransformerConv]
-    k_values = [2, 2, 2]
+    k_values = [2, 2, 1]
     # conv_types = [conv_layer_choices[conv_type1], conv_layer_choices[conv_type2], conv_layer_choices[conv_type3]]
     lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
     dropout_rate1 = trial.suggest_float("dropout_rate1", 0.1, 0.6)
@@ -56,7 +56,7 @@ def objective(trial):
 if __name__ == "__main__":
     # Ensure that Optuna reuses the study if it exists, otherwise create a new one
     db = "sqlite:///hyptune_different_layers.db"
-    name = "var_num_epochs"
+    name = "var_epochs"
     try:
         study = optuna.load_study(
             study_name=name, 

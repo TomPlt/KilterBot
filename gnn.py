@@ -433,7 +433,7 @@ if __name__ == "__main__":
     hidden_dim1 = 128
     hidden_dim2 = 128
     hidden_dim3 = 512
-    lr = 0.0016
+    lr = 0.00016
     dropout_rate1 = dropout_rate2 = 0.4
     weight_decay = 0.00087
     conv_types = [ChebConv, ChebConv, TransformerConv]
@@ -444,6 +444,6 @@ if __name__ == "__main__":
     best_val_loss = run_training_and_evaluation(
         conv_types, k_values, train_loader, test_loader,
         hidden_dim1, hidden_dim2, hidden_dim3,
-        lr, dropout_rate1, dropout_rate2, weight_decay, num_epochs=200, mlflow_run=True)
+        lr, dropout_rate1, dropout_rate2, weight_decay, num_epochs=10, mlflow_run=True)
     mlflow.log_metric("avg_val_loss", best_val_loss)
 
