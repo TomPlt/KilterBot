@@ -51,6 +51,12 @@ def objective(trial):
             hidden_dim1, hidden_dim2, hidden_dim3,
             lr, dropout_rate1, dropout_rate2, weight_decay, num_epochs)
         fold_val_losses.append(best_val_loss)
+        # continue with the next parameters if the val loss is very high
+        logging.info(f"Val loss: {best_val_loss}")
+        if best_val_loss > 1.55:
+            logging.info("Val loss too high, skipping to next parameters")
+            continue
+    
     return sum(fold_val_losses) / len(fold_val_losses)
 
 if __name__ == "__main__":

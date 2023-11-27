@@ -1,0 +1,72 @@
+[
+    {
+        "uuid": "821C6778AB5642E2B7F3F78E454820C9",
+        "actual": 10.0,
+        "predicted": 23.317394256591797,
+        "loss": 13.317394256591797,
+        "climb_name": "hadda smoke him"
+    },
+    {
+        "uuid": "832ACB60150F41D8B3BA8659753916C6",
+        "actual": 14.0,
+        "predicted": 24.486343383789062,
+        "loss": 10.486343383789062,
+        "climb_name": "Borgov"
+    },
+    {
+        "uuid": "9e45dc0215784cad9e01c1381843e8d8",
+        "actual": 15.0,
+        "predicted": 24.97758674621582,
+        "loss": 9.97758674621582,
+        "climb_name": "Beaches Rock Gym"
+    },
+    {
+        "uuid": "84885E55162D4F1ABB8B480003E8BD98",
+        "actual": 14.375,
+        "predicted": 21.320913314819336,
+        "loss": 6.945913314819336,
+        "climb_name": "Something Not So Crazy"
+    },
+    {
+        "uuid": "2434F7AF677C40D9B483EE0B40E02260",
+        "actual": 16.0,
+        "predicted": 22.871009826660156,
+        "loss": 6.871009826660156,
+        "climb_name": "a fun rock climb"
+    },
+    {
+        "uuid": "7f93cfcb77074344b257d8a08efc7b82",
+        "actual": 16.0,
+        "predicted": 22.049272537231445,
+        "loss": 6.049272537231445,
+        "climb_name": "Petro!!!"
+    },
+    {
+        "uuid": "4B635619F4CC47F1AC2683C2C38B7FBB",
+        "actual": 16.0,
+        "predicted": 21.917224884033203,
+        "loss": 5.917224884033203,
+        "climb_name": "lil dan"
+    },
+    {
+        "uuid": "3E2A58A4F9B94729BBE17019EDAA3783",
+        "actual": 18.0,
+        "predicted": 23.68661880493164,
+        "loss": 5.686618804931641,
+        "climb_name": "Mathieu-pinchu"
+    },
+    {
+        "uuid": "1BBF1C5435CF40AD836253891E016E9D",
+        "actual": 27.33329963684082,
+        "predicted": 21.65534210205078,
+        "loss": 5.677957534790039,
+        "climb_name": "Studio Griff 10"
+    },
+    {
+        "uuid": "e50073a2ca8c44bab31c93e43f365068",
+        "actual": 22.0,
+        "predicted": 16.48287582397461,
+        "loss": 5.517124176025391,
+        "climb_name": "When we were younger"
+    }
+]

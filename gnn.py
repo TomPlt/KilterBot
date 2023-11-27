@@ -1,3 +1,4 @@
+import json 
 import mlflow
 import networkx as nx
 from scipy.sparse import csr_matrix
@@ -20,6 +21,8 @@ from torch_geometric.nn import GCNConv, GATConv, global_mean_pool
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 from models import *
+import logging
+logging.basicConfig(level=logging.INFO)
 
 class MtrxType(Enum):
     ADJACENCY_MATRIX = 0
@@ -373,6 +376,15 @@ def run_training_and_evaluation(conv_types, k_values, train_loader, test_loader,
                 total_val_loss += loss.item() * batch.num_graphs
                 true_values.extend(batch.y.tolist())
                 predicted_values.extend(out.tolist())
+                batch_uuids = batch.uuid
+
+                for actual, predicted, uuid in zip(batch.y.tolist(), out.tolist(), batch_uuids):
+                    prediction_details.append({
+                        'uuid': uuid,
+                        'actual': actual,
+                        'predicted': predicted,
+                        'loss': abs(actual - predicted)
+                    })
         avg_val_loss = total_val_loss / len(test_loader.dataset)
         val_loss_list.append(avg_val_loss)
 
@@ -401,7 +413,7 @@ def run_training_and_evaluation(conv_types, k_values, train_loader, test_loader,
     plt.grid(True)
     plt.savefig("mean_loss_by_bins.png")
     plt.close('all')
- 
+    
     if mlflow_run: 
         mlflow.log_param("lr", lr)
         mlflow.log_param("dropout_rate1", dropout_rate1)
@@ -415,9 +427,22 @@ def run_training_and_evaluation(conv_types, k_values, train_loader, test_loader,
         mlflow.log_artifact("mean_loss_by_bins.png")
         mlflow.log_artifact("true_vs_pred.png")
         top_10_worst_predictions = sorted(prediction_details, key=lambda x: x['loss'], reverse=True)[:10]
+
+        # Load climb names
+        df_climbs = pd.read_csv('data/csvs/climbs.csv')
+
+        # Add climb names to the predictions
         for pred in top_10_worst_predictions:
-            print(f"{pred['name']}, Actual: {pred['actual']}, Predicted: {pred['predicted']}, Loss: {pred['loss']}")
-        mlflow.log_metric("top_10_worst_predictions", top_10_worst_predictions)
+            climb_name = df_climbs[df_climbs['uuid'] == pred['uuid']]['name'].values[0]
+            pred['climb_name'] = climb_name
+            logging.info(f"{climb_name}, Actual: {pred['actual']}, Predicted: {pred['predicted']}, Loss: {pred['loss']}")
+
+        # Write to a JSON file
+        with open("top_10_worst_predictions.json", "w") as file:
+            json.dump(top_10_worst_predictions, file, indent=4)
+
+        # Log the JSON file with MLflow
+        mlflow.log_artifact("top_10_worst_predictions.json")
 
 
 
@@ -430,12 +455,13 @@ if __name__ == "__main__":
     mlflow.set_experiment("Tuned Model")
     fold_data_lists = data_loading()
     fold_val_losses = []
-    hidden_dim1 = 128
-    hidden_dim2 = 128
-    hidden_dim3 = 512
-    lr = 0.00016
-    dropout_rate1 = dropout_rate2 = 0.4
-    weight_decay = 0.00087
+    hidden_dim1 = 256
+    hidden_dim2 = 512   
+    hidden_dim3 = 256
+    lr = 0.0004761947456361084
+    dropout_rate1 = 0.4749033543430395
+    dropout_rate2 = 0.3987789183651262
+    weight_decay = 1.8746053259016402e-05
     conv_types = [ChebConv, ChebConv, TransformerConv]
     k_values = [2, 2, 2]
     train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
@@ -444,6 +470,6 @@ if __name__ == "__main__":
     best_val_loss = run_training_and_evaluation(
         conv_types, k_values, train_loader, test_loader,
         hidden_dim1, hidden_dim2, hidden_dim3,
-        lr, dropout_rate1, dropout_rate2, weight_decay, num_epochs=10, mlflow_run=True)
+        lr, dropout_rate1, dropout_rate2, weight_decay, num_epochs=100, mlflow_run=True)
     mlflow.log_metric("avg_val_loss", best_val_loss)
 
