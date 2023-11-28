@@ -229,11 +229,13 @@ def data_loading(n_splits=5):
     df_train = pd.read_csv('data/csvs/train.csv')
     difficulties = df_train['difficulty'].to_numpy()
     indices = np.arange(len(difficulties))
+    uuids = df_train['uuid'].to_numpy()
     valid_indices = []
     adjacency_matrices = []  # This will hold the adjacency matrices
     node_feature_matrices = []  # This will hold the node feature matrices
     edge_sequence_list = []  # This will hold the edge sequences
     valid_difficulties = []
+    valid_uuids = []
     print("Loading data...")
     for i in indices:
         try: 
@@ -250,7 +252,7 @@ def data_loading(n_splits=5):
             assert edge_index.max() < x.shape[0], "edge_index contains node indices not in feature matrix."
             valid_indices.append(i)
             valid_difficulties.append(difficulties[i])  # Keep the valid difficulty
-
+            valid_uuids.append(uuids[i])
         except FileNotFoundError:
             # difficulties = np.delete(difficulties, i)
             # indices = np.delete(indices, i)
@@ -269,7 +271,7 @@ def data_loading(n_splits=5):
             edge_attr = edge_sequence_list[idx]
             x = torch.tensor(node_feature_matrices[idx], dtype=torch.float)
             y = torch.tensor([difficulties[idx]], dtype=torch.float)
-            data_object = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y)
+            data_object = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y, uuid=valid_uuids[idx])
             data_list.append(data_object)
         return data_list
     
@@ -338,7 +340,7 @@ def evaluate(data, model, criterion):
         loss = criterion(predictions, data.y)
     return loss.item()
 
-def run_training_and_evaluation(conv_types, k_values, train_loader, test_loader, hidden_dim1=256, hidden_dim2=128, hidden_dim3=64, lr=0.01, dropout_rate1=0.5, dropout_rate2=0.5, weight_decay=5e-4, num_epochs=200, mlflow_run=None):
+def run_training_and_evaluation(conv_types, k_values, train_loader, test_loader, hidden_dim1=256, hidden_dim2=128, hidden_dim3=64, lr=0.01, dropout_rate1=0.5, dropout_rate2=0.5, weight_decay=5e-4, num_epochs=200, mlflow_run=None, counter=None):
     input_dim = next(iter(train_loader)).x.shape[1]
     model = SimpleGNN(input_dim, hidden_dim1, hidden_dim2, hidden_dim3, conv_types, k_values, dropout_rate1, dropout_rate2)
     optimizer = torch.optim.AdamW(model.parameters(), lr, weight_decay=weight_decay)
@@ -403,7 +405,7 @@ def run_training_and_evaluation(conv_types, k_values, train_loader, test_loader,
     plt.xlabel('True Values')
     plt.ylabel('Predicted Values')
     plt.grid(True)
-    plt.savefig("true_vs_pred.png")
+    plt.savefig(f"data/pngs/true_vs_pred_{counter}.png")
     # Plotting Mean Loss by Bins
     plt.figure(figsize=(10, 5))
     plt.bar(bins[:-1], mean_losses, width=np.diff(bins), align="edge", edgecolor='black')
@@ -411,7 +413,7 @@ def run_training_and_evaluation(conv_types, k_values, train_loader, test_loader,
     plt.xlabel('Bins of True Values')
     plt.ylabel('Mean Loss')
     plt.grid(True)
-    plt.savefig("mean_loss_by_bins.png")
+    plt.savefig(f"data/pngs/mean_loss_by_bins_{counter}.png")
     plt.close('all')
     
     if mlflow_run: 
@@ -424,8 +426,8 @@ def run_training_and_evaluation(conv_types, k_values, train_loader, test_loader,
         mlflow.log_param("hidden_dim1", hidden_dim1)
         mlflow.log_param("hidden_dim2", hidden_dim2)
         mlflow.log_param("hidden_dim3", hidden_dim3)
-        mlflow.log_artifact("mean_loss_by_bins.png")
-        mlflow.log_artifact("true_vs_pred.png")
+        mlflow.log_artifact(f"data/pngs/mean_loss_by_bins_{counter}.png")
+        mlflow.log_artifact(f"data/pngs/true_vs_pred_{counter}.png")
         top_10_worst_predictions = sorted(prediction_details, key=lambda x: x['loss'], reverse=True)[:10]
 
         # Load climb names
@@ -438,11 +440,11 @@ def run_training_and_evaluation(conv_types, k_values, train_loader, test_loader,
             logging.info(f"{climb_name}, Actual: {pred['actual']}, Predicted: {pred['predicted']}, Loss: {pred['loss']}")
 
         # Write to a JSON file
-        with open("top_10_worst_predictions.json", "w") as file:
+        with open(f"data/jsons/top_10_worst_predictions_{counter}.json", "w") as file:
             json.dump(top_10_worst_predictions, file, indent=4)
 
         # Log the JSON file with MLflow
-        mlflow.log_artifact("top_10_worst_predictions.json")
+        mlflow.log_artifact(f"data/jsons/top_10_worst_predictions_{counter}.json")
 
 
 
@@ -450,7 +452,7 @@ def run_training_and_evaluation(conv_types, k_values, train_loader, test_loader,
 
 if __name__ == "__main__":
     fold_val_losses = []
-    train_data, test_data = data_loading_all()
+    # train_data, test_data = data_loading()
 
     mlflow.set_experiment("Tuned Model")
     fold_data_lists = data_loading()
@@ -464,12 +466,15 @@ if __name__ == "__main__":
     weight_decay = 1.8746053259016402e-05
     conv_types = [ChebConv, ChebConv, TransformerConv]
     k_values = [2, 2, 2]
-    train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
-    test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
-
-    best_val_loss = run_training_and_evaluation(
+    # train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
+    # test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
+    
+    for counter, (train_data, test_data) in enumerate(fold_data_lists):
+        train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
+        test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
+        # Run the training and validation process for each fold
+        best_val_loss = run_training_and_evaluation(
         conv_types, k_values, train_loader, test_loader,
         hidden_dim1, hidden_dim2, hidden_dim3,
-        lr, dropout_rate1, dropout_rate2, weight_decay, num_epochs=100, mlflow_run=True)
-    mlflow.log_metric("avg_val_loss", best_val_loss)
+        lr, dropout_rate1, dropout_rate2, weight_decay, num_epochs=100, mlflow_run=True, counter=counter)
 

@@ -1,0 +1,72 @@
+[
+    {
+        "uuid": "53a14741d5854c439746c7f70f11683a",
+        "actual": 10.0,
+        "predicted": 20.58214569091797,
+        "loss": 10.582145690917969,
+        "climb_name": "StarFish"
+    },
+    {
+        "uuid": "9e45dc0215784cad9e01c1381843e8d8",
+        "actual": 15.0,
+        "predicted": 25.028427124023438,
+        "loss": 10.028427124023438,
+        "climb_name": "Beaches Rock Gym"
+    },
+    {
+        "uuid": "832ACB60150F41D8B3BA8659753916C6",
+        "actual": 14.0,
+        "predicted": 23.705232620239258,
+        "loss": 9.705232620239258,
+        "climb_name": "Borgov"
+    },
+    {
+        "uuid": "80A767F741504016931287B87FCAB6B7",
+        "actual": 15.0,
+        "predicted": 23.691083908081055,
+        "loss": 8.691083908081055,
+        "climb_name": "The Original Horsewomen"
+    },
+    {
+        "uuid": "380DDE09D519466CA3784F6042DF98BF",
+        "actual": 15.0,
+        "predicted": 22.78854751586914,
+        "loss": 7.788547515869141,
+        "climb_name": "n33dful-things.com"
+    },
+    {
+        "uuid": "BD6DF9A51B3D4C9A910567FE52B4EE7A",
+        "actual": 16.0,
+        "predicted": 23.266437530517578,
+        "loss": 7.266437530517578,
+        "climb_name": "Zoulou \ud83e\udd8d"
+    },
+    {
+        "uuid": "EBBF96416D5740999A8A969DBE8190D9",
+        "actual": 27.0,
+        "predicted": 20.593358993530273,
+        "loss": 6.406641006469727,
+        "climb_name": "the DIRTY"
+    },
+    {
+        "uuid": "924ADC69396148738F1C0AE0C1015D98",
+        "actual": 17.5,
+        "predicted": 23.852252960205078,
+        "loss": 6.352252960205078,
+        "climb_name": "Ten Banger"
+    },
+    {
+        "uuid": "4a4392e7919a4b0987454f274829d22f",
+        "actual": 13.5,
+        "predicted": 18.999197006225586,
+        "loss": 5.499197006225586,
+        "climb_name": "Mercredi 9h00"
+    },
+    {
+        "uuid": "9D8BFA22F94A4ED18C8DE5E886E544C3",
+        "actual": 12.094599723815918,
+        "predicted": 17.5194149017334,
+        "loss": 5.4248151779174805,
+        "climb_name": "skip to my Lou?"
+    }
+]

@@ -1,0 +1,72 @@
+[
+    {
+        "uuid": "cafbaef6cb1e4573a87df0ca67f82913",
+        "actual": 24.5,
+        "predicted": 17.08475685119629,
+        "loss": 7.415243148803711,
+        "climb_name": "le bote"
+    },
+    {
+        "uuid": "25B518915A0F4AD6A0FA343FD937802A",
+        "actual": 26.0,
+        "predicted": 19.00554847717285,
+        "loss": 6.994451522827148,
+        "climb_name": "Poker Face"
+    },
+    {
+        "uuid": "1cc0e108e673407093ef6c3ed2420f0c",
+        "actual": 18.0,
+        "predicted": 24.723173141479492,
+        "loss": 6.723173141479492,
+        "climb_name": "Rush for Forge"
+    },
+    {
+        "uuid": "C611DE1906CA4B35A510935D2DD9D04D",
+        "actual": 26.0,
+        "predicted": 20.09037208557129,
+        "loss": 5.909627914428711,
+        "climb_name": "Lille-skutt"
+    },
+    {
+        "uuid": "0be89e4e402d4af7bf1f9796108fc378",
+        "actual": 18.0,
+        "predicted": 23.82707977294922,
+        "loss": 5.827079772949219,
+        "climb_name": "The opposite of try hard"
+    },
+    {
+        "uuid": "75DE3F1D486B421DB26400C4F0B71FB2",
+        "actual": 18.0,
+        "predicted": 23.804794311523438,
+        "loss": 5.8047943115234375,
+        "climb_name": "Spiderman Wannabe"
+    },
+    {
+        "uuid": "1BDC54D071574C41AD345E77D8367422",
+        "actual": 17.33329963684082,
+        "predicted": 22.764934539794922,
+        "loss": 5.431634902954102,
+        "climb_name": "Count of Monte Cristo"
+    },
+    {
+        "uuid": "69a9f9cf23c14c7ea658fa38934abbd9",
+        "actual": 22.75,
+        "predicted": 17.36765480041504,
+        "loss": 5.382345199584961,
+        "climb_name": "Bad dyno"
+    },
+    {
+        "uuid": "234F47F262234D8397CCBF5299389FE1",
+        "actual": 19.0,
+        "predicted": 24.327512741088867,
+        "loss": 5.327512741088867,
+        "climb_name": "Longgggggg"
+    },
+    {
+        "uuid": "e8224a2ffdf8465a936049dcfd01cc63",
+        "actual": 26.806499481201172,
+        "predicted": 21.49700355529785,
+        "loss": 5.30949592590332,
+        "climb_name": "Air Traffic Control"
+    }
+]

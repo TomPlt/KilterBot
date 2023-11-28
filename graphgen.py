@@ -415,7 +415,6 @@ def build_and_save_graphs_with_features(index: int, max_foots: int):
         G.nodes[node].update(node_features.to_dict())
     print(G.nodes())
     adjacency_matrix = nx.adjacency_matrix(G)
-    save_npz(f"data/npzs/adjacency_mtrx/{index}.npz", adjacency_matrix)
     edge_index = adjacency_to_edge_index(adjacency_matrix.todense())
     features_list = []
     for node in G.nodes(data=True):
@@ -429,8 +428,6 @@ def build_and_save_graphs_with_features(index: int, max_foots: int):
         raise
     
     node_feature_matrix = csr_matrix(node_feature_array)
-    save_npz(f"data/npzs/node_feature_mtrx/{index}.npz", node_feature_matrix)
-
     ordered_edges = df_edges[['start_node', 'end_node']].values.tolist()
     indexed_edges = []
     for start, end in ordered_edges:
@@ -439,7 +436,10 @@ def build_and_save_graphs_with_features(index: int, max_foots: int):
             indexed_edges.append(edge_tuple)
     if len(G.edges(data=True)) == 1: 
         max_foothold_count = 0
+        return max_foothold_count
     edge_index_tensor_ordered = torch.tensor(indexed_edges, dtype=torch.long)
+    save_npz(f"data/npzs/node_feature_mtrx/{index}.npz", node_feature_matrix)
+    save_npz(f"data/npzs/adjacency_mtrx/{index}.npz", adjacency_matrix)
     torch.save(edge_index_tensor_ordered, f"data/tensors/edge_sequence_{index}.pt")
     if max_foothold_count > max_foots:
         max_foots = max_foothold_count

@@ -1,0 +1,72 @@
+[
+    {
+        "uuid": "C2A3551748FD4527AB3827876038C526",
+        "actual": 16.444400787353516,
+        "predicted": 23.441377639770508,
+        "loss": 6.996976852416992,
+        "climb_name": "Crookshanks"
+    },
+    {
+        "uuid": "84885E55162D4F1ABB8B480003E8BD98",
+        "actual": 14.375,
+        "predicted": 21.298465728759766,
+        "loss": 6.923465728759766,
+        "climb_name": "Something Not So Crazy"
+    },
+    {
+        "uuid": "3588839EB1BA4C34BB1700C1BFC9DCC9",
+        "actual": 16.0,
+        "predicted": 22.802574157714844,
+        "loss": 6.802574157714844,
+        "climb_name": "We Didn\u2019t Start The Fire"
+    },
+    {
+        "uuid": "17533EC3C17E41D097279CE7C47A69D7",
+        "actual": 10.0,
+        "predicted": 16.362957000732422,
+        "loss": 6.362957000732422,
+        "climb_name": "I Love Climbing"
+    },
+    {
+        "uuid": "3404e13388424a92996b627c9e418b4f",
+        "actual": 18.0,
+        "predicted": 11.979941368103027,
+        "loss": 6.020058631896973,
+        "climb_name": "Easy kilter"
+    },
+    {
+        "uuid": "69E98D09BDA5492BB1F130AE68BBF721",
+        "actual": 16.818199157714844,
+        "predicted": 22.26953125,
+        "loss": 5.451332092285156,
+        "climb_name": "Braised Pork Rice"
+    },
+    {
+        "uuid": "e466ffb4fc4a4626a5beca622faa3bbe",
+        "actual": 17.0,
+        "predicted": 22.246322631835938,
+        "loss": 5.2463226318359375,
+        "climb_name": "Pneumatic"
+    },
+    {
+        "uuid": "F01B5ACF99C14144BBB0CF87A751CB35",
+        "actual": 10.32349967956543,
+        "predicted": 15.478291511535645,
+        "loss": 5.154791831970215,
+        "climb_name": "Sobble"
+    },
+    {
+        "uuid": "198dae4b6bf54a41a2fd06590428c472",
+        "actual": 11.109100341796875,
+        "predicted": 16.010295867919922,
+        "loss": 4.901195526123047,
+        "climb_name": "Cakewalk"
+    },
+    {
+        "uuid": "196853133a9d4e628cbea3b7487dcaef",
+        "actual": 16.75,
+        "predicted": 21.600860595703125,
+        "loss": 4.850860595703125,
+        "climb_name": "dddd75"
+    }
+]

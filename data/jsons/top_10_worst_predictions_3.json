@@ -1,0 +1,72 @@
+[
+    {
+        "uuid": "a3ab05c481a44dabb839b150698673a5",
+        "actual": 26.766700744628906,
+        "predicted": 17.900142669677734,
+        "loss": 8.866558074951172,
+        "climb_name": "the godfather of dynos"
+    },
+    {
+        "uuid": "7f93cfcb77074344b257d8a08efc7b82",
+        "actual": 16.0,
+        "predicted": 24.218547821044922,
+        "loss": 8.218547821044922,
+        "climb_name": "Petro!!!"
+    },
+    {
+        "uuid": "cf07d3967686450587570c0d90ab9eee",
+        "actual": 12.5,
+        "predicted": 20.120052337646484,
+        "loss": 7.620052337646484,
+        "climb_name": "Glass Jelly"
+    },
+    {
+        "uuid": "f1f38580742f4c99919b635cf095ce81",
+        "actual": 10.875,
+        "predicted": 18.446609497070312,
+        "loss": 7.5716094970703125,
+        "climb_name": "kids ninja 2"
+    },
+    {
+        "uuid": "CFD1D001A22941FC9E53880020E51D54",
+        "actual": 16.0,
+        "predicted": 21.79555892944336,
+        "loss": 5.795558929443359,
+        "climb_name": "Broken Toe Gang"
+    },
+    {
+        "uuid": "4B635619F4CC47F1AC2683C2C38B7FBB",
+        "actual": 16.0,
+        "predicted": 21.573476791381836,
+        "loss": 5.573476791381836,
+        "climb_name": "lil dan"
+    },
+    {
+        "uuid": "1BBF1C5435CF40AD836253891E016E9D",
+        "actual": 27.33329963684082,
+        "predicted": 21.79027557373047,
+        "loss": 5.543024063110352,
+        "climb_name": "Studio Griff 10"
+    },
+    {
+        "uuid": "89B79AC681BF41BCA4A81424B2AD1B01",
+        "actual": 10.953100204467773,
+        "predicted": 16.29985809326172,
+        "loss": 5.346757888793945,
+        "climb_name": "#actually v0"
+    },
+    {
+        "uuid": "5DB0308D71CD47A29A552E08E0EE2A70",
+        "actual": 22.200000762939453,
+        "predicted": 17.03091049194336,
+        "loss": 5.169090270996094,
+        "climb_name": "Like Mike"
+    },
+    {
+        "uuid": "793332cd2ec44889bf44b467d957040a",
+        "actual": 16.66670036315918,
+        "predicted": 21.787988662719727,
+        "loss": 5.121288299560547,
+        "climb_name": "curl dat toe"
+    }
+]
