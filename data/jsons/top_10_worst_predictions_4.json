@@ -1,72 +1,72 @@
 [
     {
         "uuid": "C2A3551748FD4527AB3827876038C526",
-        "actual": 16.444400787353516,
-        "predicted": 23.441377639770508,
-        "loss": 6.996976852416992,
+        "actual": -1.0700403451919556,
+        "predicted": 0.5718473196029663,
+        "loss": 1.6418876647949219,
         "climb_name": "Crookshanks"
     },
     {
-        "uuid": "84885E55162D4F1ABB8B480003E8BD98",
-        "actual": 14.375,
-        "predicted": 21.298465728759766,
-        "loss": 6.923465728759766,
-        "climb_name": "Something Not So Crazy"
-    },
-    {
-        "uuid": "3588839EB1BA4C34BB1700C1BFC9DCC9",
-        "actual": 16.0,
-        "predicted": 22.802574157714844,
-        "loss": 6.802574157714844,
-        "climb_name": "We Didn\u2019t Start The Fire"
-    },
-    {
         "uuid": "17533EC3C17E41D097279CE7C47A69D7",
-        "actual": 10.0,
-        "predicted": 16.362957000732422,
-        "loss": 6.362957000732422,
+        "actual": -2.7536745071411133,
+        "predicted": -1.193434715270996,
+        "loss": 1.5602397918701172,
         "climb_name": "I Love Climbing"
     },
     {
-        "uuid": "3404e13388424a92996b627c9e418b4f",
-        "actual": 18.0,
-        "predicted": 11.979941368103027,
-        "loss": 6.020058631896973,
-        "climb_name": "Easy kilter"
-    },
-    {
-        "uuid": "69E98D09BDA5492BB1F130AE68BBF721",
-        "actual": 16.818199157714844,
-        "predicted": 22.26953125,
-        "loss": 5.451332092285156,
-        "climb_name": "Braised Pork Rice"
-    },
-    {
-        "uuid": "e466ffb4fc4a4626a5beca622faa3bbe",
-        "actual": 17.0,
-        "predicted": 22.246322631835938,
-        "loss": 5.2463226318359375,
-        "climb_name": "Pneumatic"
-    },
-    {
-        "uuid": "F01B5ACF99C14144BBB0CF87A751CB35",
-        "actual": 10.32349967956543,
-        "predicted": 15.478291511535645,
-        "loss": 5.154791831970215,
-        "climb_name": "Sobble"
-    },
-    {
-        "uuid": "198dae4b6bf54a41a2fd06590428c472",
-        "actual": 11.109100341796875,
-        "predicted": 16.010295867919922,
-        "loss": 4.901195526123047,
-        "climb_name": "Cakewalk"
+        "uuid": "d2ce063aca0b4a8f96d1a502d00e1ec1",
+        "actual": 0.9000859260559082,
+        "predicted": -0.6322877407073975,
+        "loss": 1.5323736667633057,
+        "climb_name": "The catcher in the rye unchained"
     },
     {
         "uuid": "196853133a9d4e628cbea3b7487dcaef",
-        "actual": 16.75,
-        "predicted": 21.600860595703125,
-        "loss": 4.850860595703125,
+        "actual": -0.9902008771896362,
+        "predicted": 0.3822915852069855,
+        "loss": 1.3724924623966217,
         "climb_name": "dddd75"
+    },
+    {
+        "uuid": "F01B5ACF99C14144BBB0CF87A751CB35",
+        "actual": -2.669158458709717,
+        "predicted": -1.3101356029510498,
+        "loss": 1.359022855758667,
+        "climb_name": "Sobble"
+    },
+    {
+        "uuid": "FF3CEC919DF9402C84395421D1B6E009",
+        "actual": -0.14112098515033722,
+        "predicted": 1.1057636737823486,
+        "loss": 1.2468846589326859,
+        "climb_name": "CHiPs!"
+    },
+    {
+        "uuid": "9D5D76F1FABC43E7A7B2EE100D7197E1",
+        "actual": 0.8089080452919006,
+        "predicted": -0.42764803767204285,
+        "loss": 1.2365560829639435,
+        "climb_name": "The shrink"
+    },
+    {
+        "uuid": "35483c2dc27c4e84a96ceab185e07a3a",
+        "actual": 0.07658300548791885,
+        "predicted": 1.296090006828308,
+        "loss": 1.2195070013403893,
+        "climb_name": "Jump, stick, and a..."
+    },
+    {
+        "uuid": "5EEF8F2DBE174E2C8DE45D03A6E7D2DA",
+        "actual": 1.14274001121521,
+        "predicted": -0.03991428017616272,
+        "loss": 1.1826542913913727,
+        "climb_name": "We\u2019re going to Rocklands"
+    },
+    {
+        "uuid": "275cf53d159c4af6b12a240cf5ea1108",
+        "actual": 0.9039004445075989,
+        "predicted": -0.2719561457633972,
+        "loss": 1.175856590270996,
+        "climb_name": "just a day"
     }
 ]

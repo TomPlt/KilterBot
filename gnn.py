@@ -229,6 +229,7 @@ def data_loading(n_splits=5):
     df_train = pd.read_csv('data/csvs/train.csv')
     difficulties = df_train['difficulty'].to_numpy()
     indices = np.arange(len(difficulties))
+    df_climbs = pd.read_csv('data/csvs/climbs.csv')
     uuids = df_train['uuid'].to_numpy()
     valid_indices = []
     adjacency_matrices = []  # This will hold the adjacency matrices
@@ -247,6 +248,9 @@ def data_loading(n_splits=5):
             edge_seq = torch.load(f'data/tensors/edge_sequence_{i}.pt')
             edge_sequence_list.append(edge_seq)
             x = torch.tensor(node_feature_matrix, dtype=torch.float)
+            ascentionist_count = df_climbs[df_climbs['uuid'] == uuids[i]]['ascensionist_count'].values[0]
+            if ascentionist_count < 30:
+                continue
             assert edge_seq.shape[0] == edge_index.shape[1], "Mismatch in number of edges vs edge sequence."
             assert x.shape[0] == adjacency_matrix.shape[0], "Mismatch in number of nodes vs features."
             assert edge_index.max() < x.shape[0], "edge_index contains node indices not in feature matrix."
@@ -260,9 +264,9 @@ def data_loading(n_splits=5):
     train_indices, test_indices = train_test_split(
         valid_indices, test_size=0.2, random_state=1
     )
-    # print(indices)
     index_mapping = {v: k for k, v in enumerate(valid_indices)}
     # valid_difficulties = (np.array(valid_difficulties) - np.mean(valid_difficulties))/ np.std(valid_difficulties)
+    # logging.info(f"Number of valid climbs: {len(valid_indices)}")
     def generate_data_list(indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, difficulties):
         data_list = []
         for idx in indices:
@@ -275,16 +279,29 @@ def data_loading(n_splits=5):
             data_list.append(data_object)
         return data_list
     
+    def normalize_difficulties(data_list, mean, std):
+        for data in data_list:
+            data.y = (data.y - mean) / std
+        return data_list
+    
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=1)
     fold_data_lists = []
+    fold_stds = []
     
     for train_idx, test_idx in kf.split(indices):
         train_indices = [indices[i] for i in train_idx if i in valid_indices]
         test_indices = [indices[i] for i in test_idx if i in valid_indices]
+        train_difficulties = np.array([valid_difficulties[index_mapping[i]] for i in train_idx if i in valid_indices])
+        mean_difficulty = np.mean(train_difficulties)
+        std_difficulty = np.std(train_difficulties)
+        fold_stds.append(std_difficulty)
         train_data_list = generate_data_list(train_indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, valid_difficulties)
         test_data_list = generate_data_list(test_indices, adjacency_matrices, node_feature_matrices, edge_sequence_list, valid_difficulties)
+        train_data_list = normalize_difficulties(train_data_list, mean_difficulty, std_difficulty)
+        test_data_list = normalize_difficulties(test_data_list, mean_difficulty, std_difficulty)
         fold_data_lists.append((train_data_list, test_data_list))
-    return fold_data_lists 
+
+    return fold_data_lists, fold_stds
 
 def compare_edge_sequence_with_edge_index(edge_sequence_tensor, edge_index):
     edge_mapping = {}
@@ -351,6 +368,7 @@ def run_training_and_evaluation(conv_types, k_values, train_loader, test_loader,
     train_loss_list = []
     true_values = []
     predicted_values = []
+
     for epoch in tqdm(range(num_epochs), desc='Epochs'):
         total_train_loss = 0.0
         model.train()
@@ -445,9 +463,6 @@ def run_training_and_evaluation(conv_types, k_values, train_loader, test_loader,
 
         # Log the JSON file with MLflow
         mlflow.log_artifact(f"data/jsons/top_10_worst_predictions_{counter}.json")
-
-
-
     return best_val_loss
 
 if __name__ == "__main__":
@@ -455,7 +470,7 @@ if __name__ == "__main__":
     # train_data, test_data = data_loading()
 
     mlflow.set_experiment("Tuned Model")
-    fold_data_lists = data_loading()
+    fold_data_lists, fold_stds = data_loading()
     fold_val_losses = []
     hidden_dim1 = 256
     hidden_dim2 = 512   
@@ -468,7 +483,6 @@ if __name__ == "__main__":
     k_values = [2, 2, 2]
     # train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
     # test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
-    
     for counter, (train_data, test_data) in enumerate(fold_data_lists):
         train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
         test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
@@ -477,4 +491,7 @@ if __name__ == "__main__":
         conv_types, k_values, train_loader, test_loader,
         hidden_dim1, hidden_dim2, hidden_dim3,
         lr, dropout_rate1, dropout_rate2, weight_decay, num_epochs=100, mlflow_run=True, counter=counter)
+        fold_val_losses.append(best_val_loss)
+    # mlflow.log_metric("fold_val_losses", fold_val_losses*np.array(fold_stds))
+    mlflow.log_metric("mean_val_loss", np.mean(fold_val_losses*np.array(fold_stds)))
 

@@ -1,72 +1,72 @@
 [
     {
-        "uuid": "cafbaef6cb1e4573a87df0ca67f82913",
-        "actual": 24.5,
-        "predicted": 17.08475685119629,
-        "loss": 7.415243148803711,
-        "climb_name": "le bote"
+        "uuid": "B2F501F2423A4A11A74A928D79D7C657",
+        "actual": -1.622330904006958,
+        "predicted": 0.307002454996109,
+        "loss": 1.929333359003067,
+        "climb_name": "Doggie Arthritis"
     },
     {
-        "uuid": "25B518915A0F4AD6A0FA343FD937802A",
-        "actual": 26.0,
-        "predicted": 19.00554847717285,
-        "loss": 6.994451522827148,
-        "climb_name": "Poker Face"
+        "uuid": "725228b4ec194734b03c706f9c504ca1",
+        "actual": -2.0541810989379883,
+        "predicted": -0.4255635738372803,
+        "loss": 1.628617525100708,
+        "climb_name": "wobbit*"
     },
     {
-        "uuid": "1cc0e108e673407093ef6c3ed2420f0c",
-        "actual": 18.0,
-        "predicted": 24.723173141479492,
-        "loss": 6.723173141479492,
-        "climb_name": "Rush for Forge"
+        "uuid": "747517B099AD4F6BA1848F5ED1D77FF1",
+        "actual": -1.0285038948059082,
+        "predicted": 0.5727958083152771,
+        "loss": 1.6012997031211853,
+        "climb_name": "Intro to body positioning"
     },
     {
-        "uuid": "C611DE1906CA4B35A510935D2DD9D04D",
-        "actual": 26.0,
-        "predicted": 20.09037208557129,
-        "loss": 5.909627914428711,
-        "climb_name": "Lille-skutt"
-    },
-    {
-        "uuid": "0be89e4e402d4af7bf1f9796108fc378",
-        "actual": 18.0,
-        "predicted": 23.82707977294922,
-        "loss": 5.827079772949219,
-        "climb_name": "The opposite of try hard"
-    },
-    {
-        "uuid": "75DE3F1D486B421DB26400C4F0B71FB2",
-        "actual": 18.0,
-        "predicted": 23.804794311523438,
-        "loss": 5.8047943115234375,
-        "climb_name": "Spiderman Wannabe"
+        "uuid": "7ef703fa8e674e179e3052bdb0f0fded",
+        "actual": -1.9030362367630005,
+        "predicted": -0.32208237051963806,
+        "loss": 1.5809538662433624,
+        "climb_name": "warmup power"
     },
     {
         "uuid": "1BDC54D071574C41AD345E77D8367422",
-        "actual": 17.33329963684082,
-        "predicted": 22.764934539794922,
-        "loss": 5.431634902954102,
+        "actual": -0.8449687957763672,
+        "predicted": 0.5184000134468079,
+        "loss": 1.363368809223175,
         "climb_name": "Count of Monte Cristo"
     },
     {
-        "uuid": "69a9f9cf23c14c7ea658fa38934abbd9",
-        "actual": 22.75,
-        "predicted": 17.36765480041504,
-        "loss": 5.382345199584961,
-        "climb_name": "Bad dyno"
+        "uuid": "33E6724AD5524E7FB6C71655CA2D5F8D",
+        "actual": -1.1168639659881592,
+        "predicted": 0.1509058177471161,
+        "loss": 1.2677697837352753,
+        "climb_name": "Juliette"
     },
     {
-        "uuid": "234F47F262234D8397CCBF5299389FE1",
-        "actual": 19.0,
-        "predicted": 24.327512741088867,
-        "loss": 5.327512741088867,
-        "climb_name": "Longgggggg"
+        "uuid": "0D49E1ED1D6E43D896616F3DA50CCA6C",
+        "actual": -0.931333601474762,
+        "predicted": 0.3231528103351593,
+        "loss": 1.2544864118099213,
+        "climb_name": "Pogo-graphy"
+    },
+    {
+        "uuid": "E1F43ADF2C4E4FBA98B332C6E099CFAA",
+        "actual": -0.41405102610588074,
+        "predicted": 0.8054749369621277,
+        "loss": 1.2195259630680084,
+        "climb_name": "fruit punch"
+    },
+    {
+        "uuid": "C69CC3E3D5BA4888952E9C3E34507957",
+        "actual": -1.6477246284484863,
+        "predicted": -0.4332439601421356,
+        "loss": 1.2144806683063507,
+        "climb_name": "reduced fat"
     },
     {
         "uuid": "e8224a2ffdf8465a936049dcfd01cc63",
-        "actual": 26.806499481201172,
-        "predicted": 21.49700355529785,
-        "loss": 5.30949592590332,
+        "actual": 1.6097333431243896,
+        "predicted": 0.40738868713378906,
+        "loss": 1.2023446559906006,
         "climb_name": "Air Traffic Control"
     }
 ]

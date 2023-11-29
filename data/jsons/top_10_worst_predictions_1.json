@@ -1,72 +1,72 @@
 [
     {
-        "uuid": "53a14741d5854c439746c7f70f11683a",
-        "actual": 10.0,
-        "predicted": 20.58214569091797,
-        "loss": 10.582145690917969,
-        "climb_name": "StarFish"
-    },
-    {
-        "uuid": "9e45dc0215784cad9e01c1381843e8d8",
-        "actual": 15.0,
-        "predicted": 25.028427124023438,
-        "loss": 10.028427124023438,
-        "climb_name": "Beaches Rock Gym"
-    },
-    {
-        "uuid": "832ACB60150F41D8B3BA8659753916C6",
-        "actual": 14.0,
-        "predicted": 23.705232620239258,
-        "loss": 9.705232620239258,
-        "climb_name": "Borgov"
-    },
-    {
-        "uuid": "80A767F741504016931287B87FCAB6B7",
-        "actual": 15.0,
-        "predicted": 23.691083908081055,
-        "loss": 8.691083908081055,
-        "climb_name": "The Original Horsewomen"
-    },
-    {
-        "uuid": "380DDE09D519466CA3784F6042DF98BF",
-        "actual": 15.0,
-        "predicted": 22.78854751586914,
-        "loss": 7.788547515869141,
-        "climb_name": "n33dful-things.com"
-    },
-    {
-        "uuid": "BD6DF9A51B3D4C9A910567FE52B4EE7A",
-        "actual": 16.0,
-        "predicted": 23.266437530517578,
-        "loss": 7.266437530517578,
-        "climb_name": "Zoulou \ud83e\udd8d"
-    },
-    {
-        "uuid": "EBBF96416D5740999A8A969DBE8190D9",
-        "actual": 27.0,
-        "predicted": 20.593358993530273,
-        "loss": 6.406641006469727,
-        "climb_name": "the DIRTY"
-    },
-    {
-        "uuid": "924ADC69396148738F1C0AE0C1015D98",
-        "actual": 17.5,
-        "predicted": 23.852252960205078,
-        "loss": 6.352252960205078,
-        "climb_name": "Ten Banger"
-    },
-    {
-        "uuid": "4a4392e7919a4b0987454f274829d22f",
-        "actual": 13.5,
-        "predicted": 18.999197006225586,
-        "loss": 5.499197006225586,
-        "climb_name": "Mercredi 9h00"
+        "uuid": "f71daf8599014f68ba705569917060d0",
+        "actual": 0.8891624808311462,
+        "predicted": -0.7221404314041138,
+        "loss": 1.61130291223526,
+        "climb_name": "Mami Zilla"
     },
     {
         "uuid": "9D8BFA22F94A4ED18C8DE5E886E544C3",
-        "actual": 12.094599723815918,
-        "predicted": 17.5194149017334,
-        "loss": 5.4248151779174805,
+        "actual": -2.2072947025299072,
+        "predicted": -0.5991209745407104,
+        "loss": 1.6081737279891968,
         "climb_name": "skip to my Lou?"
+    },
+    {
+        "uuid": "924ADC69396148738F1C0AE0C1015D98",
+        "actual": -0.8021560311317444,
+        "predicted": 0.6847808957099915,
+        "loss": 1.4869369268417358,
+        "climb_name": "Ten Banger"
+    },
+    {
+        "uuid": "010d4aa72bf24031865310380d0ee20b",
+        "actual": 1.6673774719238281,
+        "predicted": 0.2957366108894348,
+        "loss": 1.3716408610343933,
+        "climb_name": "Helicopter feet"
+    },
+    {
+        "uuid": "11C31E39B1604203B3EE184491A8EAF5",
+        "actual": 0.15493139624595642,
+        "predicted": 1.4615353345870972,
+        "loss": 1.3066039383411407,
+        "climb_name": "Olivia Wilde"
+    },
+    {
+        "uuid": "4a4392e7919a4b0987454f274829d22f",
+        "actual": -1.8419595956802368,
+        "predicted": -0.5583074688911438,
+        "loss": 1.283652126789093,
+        "climb_name": "Mercredi 9h00"
+    },
+    {
+        "uuid": "36E949A6395D4290AF08FDFBCC6010C1",
+        "actual": -0.6721805930137634,
+        "predicted": -1.9055086374282837,
+        "loss": 1.2333280444145203,
+        "climb_name": "Bell of the Wall"
+    },
+    {
+        "uuid": "0BE2520FE7D74B7794ECD979A23C5A28",
+        "actual": -1.1704285144805908,
+        "predicted": 0.0528378039598465,
+        "loss": 1.2232663184404373,
+        "climb_name": "Power Ladder"
+    },
+    {
+        "uuid": "ead5bd911195414c962f449d7254b1ab",
+        "actual": -1.6903302669525146,
+        "predicted": -0.521645188331604,
+        "loss": 1.1686850786209106,
+        "climb_name": "Warm Stacks"
+    },
+    {
+        "uuid": "7ccbd06148624170bf909be00395ffa8",
+        "actual": -1.1610442399978638,
+        "predicted": -0.0008039921522140503,
+        "loss": 1.1602402478456497,
+        "climb_name": "You dont know me"
     }
 ]

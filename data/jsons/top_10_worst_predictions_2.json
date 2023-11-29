@@ -1,72 +1,72 @@
 [
     {
-        "uuid": "2434F7AF677C40D9B483EE0B40E02260",
-        "actual": 16.0,
-        "predicted": 22.683279037475586,
-        "loss": 6.683279037475586,
-        "climb_name": "a fun rock climb"
-    },
-    {
         "uuid": "60467CDD7D15486E89C2C45AFDD75A40",
-        "actual": 20.0,
-        "predicted": 26.59373664855957,
-        "loss": 6.59373664855957,
+        "actual": -0.14216993749141693,
+        "predicted": 1.9103364944458008,
+        "loss": 2.0525064319372177,
         "climb_name": "Sanpellegrino"
     },
     {
-        "uuid": "C74BCAFC34454432BD9B1B61FC0BC72C",
-        "actual": 16.0,
-        "predicted": 21.999521255493164,
-        "loss": 5.999521255493164,
-        "climb_name": "Edge of the Galaxy - Grotto"
+        "uuid": "2434F7AF677C40D9B483EE0B40E02260",
+        "actual": -1.1922041177749634,
+        "predicted": 0.6780861616134644,
+        "loss": 1.8702902793884277,
+        "climb_name": "a fun rock climb"
     },
     {
-        "uuid": "2F880384460347DC97AE71DC08D8DB0D",
-        "actual": 15.0,
-        "predicted": 20.773120880126953,
-        "loss": 5.773120880126953,
-        "climb_name": "what goes up, must come down"
-    },
-    {
-        "uuid": "E1F0B252D7964BC2A434687FA935A830",
-        "actual": 15.0,
-        "predicted": 20.423744201660156,
-        "loss": 5.423744201660156,
-        "climb_name": "LEFT it at home"
-    },
-    {
-        "uuid": "2DDF869A26704CC99D2654C9B39178F3",
-        "actual": 27.0,
-        "predicted": 21.57944107055664,
-        "loss": 5.420558929443359,
-        "climb_name": "Charles Barkley"
-    },
-    {
-        "uuid": "EED07AB3F934429CB7B3CCB063ED9506",
-        "actual": 11.039899826049805,
-        "predicted": 16.180788040161133,
-        "loss": 5.140888214111328,
-        "climb_name": "Mere mortals"
-    },
-    {
-        "uuid": "457F0483D0C6438FB5867BB262CFA643",
-        "actual": 19.260799407958984,
-        "predicted": 24.335786819458008,
-        "loss": 5.074987411499023,
-        "climb_name": "Dad?"
+        "uuid": "5B8DF76DF91B4C17BD2A6927BFD938F3",
+        "actual": -2.275052070617676,
+        "predicted": -0.7340025305747986,
+        "loss": 1.5410495400428772,
+        "climb_name": "V0-V3 Circuit #8"
     },
     {
         "uuid": "9AFC2D3905A04ECCAE8846F46B07D7A4",
-        "actual": 23.90130043029785,
-        "predicted": 18.88578987121582,
-        "loss": 5.015510559082031,
+        "actual": 0.8819547891616821,
+        "predicted": -0.5537732839584351,
+        "loss": 1.4357280731201172,
         "climb_name": "Mauricio easy(ish\ud83d\ude02)"
     },
     {
+        "uuid": "23EC802A68514DBDB97BB86155D306DA",
+        "actual": 0.12033861875534058,
+        "predicted": -1.3122714757919312,
+        "loss": 1.4326100945472717,
+        "climb_name": "easy steeps"
+    },
+    {
         "uuid": "D38BC20389B740A1B6FC5EC4A8A17916",
-        "actual": 17.0,
-        "predicted": 21.915855407714844,
-        "loss": 4.915855407714844,
+        "actual": -0.9296956062316895,
+        "predicted": 0.4525342881679535,
+        "loss": 1.382229894399643,
         "climb_name": "Stunt Coordinator"
+    },
+    {
+        "uuid": "0DE121475ADA449097609AF6611E65B8",
+        "actual": 0.12033861875534058,
+        "predicted": 1.4931870698928833,
+        "loss": 1.3728484511375427,
+        "climb_name": "Apocalypse Meow"
+    },
+    {
+        "uuid": "9D8683D7FC56416CA8C2B82E2D0B1CD6",
+        "actual": -0.40467849373817444,
+        "predicted": -1.755198359489441,
+        "loss": 1.3505198657512665,
+        "climb_name": "Scared em Off"
+    },
+    {
+        "uuid": "FA0C8E081BB94B37B2653800D0310FAC",
+        "actual": 0.33919206261634827,
+        "predicted": -0.9655327796936035,
+        "loss": 1.3047248423099518,
+        "climb_name": "Kings cross"
+    },
+    {
+        "uuid": "f68a2d3d446443c38a109c86d58ce1fd",
+        "actual": -1.4223978519439697,
+        "predicted": -0.13429602980613708,
+        "loss": 1.2881018221378326,
+        "climb_name": "bumpy boy"
     }
 ]
