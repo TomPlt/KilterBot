@@ -1,6 +1,7 @@
 app/*
 kilterproblems/kilterproblems
-todo.txt
 __pycache__/
 mlruns/ 
 *.pt
+*.txt
+*.sqlite3

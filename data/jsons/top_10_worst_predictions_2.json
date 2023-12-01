@@ -1,72 +1,72 @@
 [
     {
         "uuid": "60467CDD7D15486E89C2C45AFDD75A40",
-        "actual": -0.14216993749141693,
-        "predicted": 1.9103364944458008,
-        "loss": 2.0525064319372177,
+        "actual": -0.26618996262550354,
+        "predicted": 2.157335042953491,
+        "loss": 8.673379792813751,
         "climb_name": "Sanpellegrino"
     },
     {
         "uuid": "2434F7AF677C40D9B483EE0B40E02260",
-        "actual": -1.1922041177749634,
-        "predicted": 0.6780861616134644,
-        "loss": 1.8702902793884277,
+        "actual": -1.3838741779327393,
+        "predicted": 0.7844148278236389,
+        "loss": 7.759933982201529,
         "climb_name": "a fun rock climb"
     },
     {
+        "uuid": "FD7022A849884B11999AC9D1193AFD29",
+        "actual": -2.84018874168396,
+        "predicted": -1.0709149837493896,
+        "loss": 6.331926934815843,
+        "climb_name": "Warm Up Circuit #2"
+    },
+    {
+        "uuid": "0954ABC533484C6DAECE2898D7ADE313",
+        "actual": -0.8250320553779602,
+        "predicted": 0.8748201727867126,
+        "loss": 6.083479201820986,
+        "climb_name": "swoop n snatch"
+    },
+    {
         "uuid": "5B8DF76DF91B4C17BD2A6927BFD938F3",
-        "actual": -2.275052070617676,
-        "predicted": -0.7340025305747986,
-        "loss": 1.5410495400428772,
+        "actual": -2.5364861488342285,
+        "predicted": -0.8526508212089539,
+        "loss": 6.026157465440249,
         "climb_name": "V0-V3 Circuit #8"
     },
     {
-        "uuid": "9AFC2D3905A04ECCAE8846F46B07D7A4",
-        "actual": 0.8819547891616821,
-        "predicted": -0.5537732839584351,
-        "loss": 1.4357280731201172,
-        "climb_name": "Mauricio easy(ish\ud83d\ude02)"
+        "uuid": "E1F0B252D7964BC2A434687FA935A830",
+        "actual": -1.6632952690124512,
+        "predicted": -0.06757384538650513,
+        "loss": 5.71081293519839,
+        "climb_name": "LEFT it at home"
     },
     {
-        "uuid": "23EC802A68514DBDB97BB86155D306DA",
-        "actual": 0.12033861875534058,
-        "predicted": -1.3122714757919312,
-        "loss": 1.4326100945472717,
-        "climb_name": "easy steeps"
+        "uuid": "EED07AB3F934429CB7B3CCB063ED9506",
+        "actual": -2.7698307037353516,
+        "predicted": -1.2640403509140015,
+        "loss": 5.388965077030186,
+        "climb_name": "Mere mortals"
     },
     {
-        "uuid": "D38BC20389B740A1B6FC5EC4A8A17916",
-        "actual": -0.9296956062316895,
-        "predicted": 0.4525342881679535,
-        "loss": 1.382229894399643,
-        "climb_name": "Stunt Coordinator"
-    },
-    {
-        "uuid": "0DE121475ADA449097609AF6611E65B8",
-        "actual": 0.12033861875534058,
-        "predicted": 1.4931870698928833,
-        "loss": 1.3728484511375427,
-        "climb_name": "Apocalypse Meow"
-    },
-    {
-        "uuid": "9D8683D7FC56416CA8C2B82E2D0B1CD6",
-        "actual": -0.40467849373817444,
-        "predicted": -1.755198359489441,
-        "loss": 1.3505198657512665,
-        "climb_name": "Scared em Off"
+        "uuid": "C74BCAFC34454432BD9B1B61FC0BC72C",
+        "actual": -1.3838741779327393,
+        "predicted": 0.08248353004455566,
+        "loss": 5.247842413067443,
+        "climb_name": "Edge of the Galaxy - Grotto"
     },
     {
         "uuid": "FA0C8E081BB94B37B2653800D0310FAC",
-        "actual": 0.33919206261634827,
-        "predicted": -0.9655327796936035,
-        "loss": 1.3047248423099518,
+        "actual": 0.24618448317050934,
+        "predicted": -1.1914012432098389,
+        "loss": 5.144872432065514,
         "climb_name": "Kings cross"
     },
     {
-        "uuid": "f68a2d3d446443c38a109c86d58ce1fd",
-        "actual": -1.4223978519439697,
-        "predicted": -0.13429602980613708,
-        "loss": 1.2881018221378326,
-        "climb_name": "bumpy boy"
+        "uuid": "2F880384460347DC97AE71DC08D8DB0D",
+        "actual": -1.6632952690124512,
+        "predicted": -0.2373555302619934,
+        "loss": 5.1031934423526275,
+        "climb_name": "what goes up, must come down"
     }
 ]

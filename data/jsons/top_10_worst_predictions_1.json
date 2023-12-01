@@ -1,72 +1,72 @@
 [
     {
-        "uuid": "f71daf8599014f68ba705569917060d0",
-        "actual": 0.8891624808311462,
-        "predicted": -0.7221404314041138,
-        "loss": 1.61130291223526,
-        "climb_name": "Mami Zilla"
+        "uuid": "380DDE09D519466CA3784F6042DF98BF",
+        "actual": -1.6523405313491821,
+        "predicted": 0.43865466117858887,
+        "loss": 7.583381844800194,
+        "climb_name": "n33dful-things.com"
+    },
+    {
+        "uuid": "EBBF96416D5740999A8A969DBE8190D9",
+        "actual": 1.6564658880233765,
+        "predicted": -0.2577362656593323,
+        "loss": 6.94220910281796,
+        "climb_name": "the DIRTY"
     },
     {
         "uuid": "9D8BFA22F94A4ED18C8DE5E886E544C3",
-        "actual": -2.2072947025299072,
-        "predicted": -0.5991209745407104,
-        "loss": 1.6081737279891968,
+        "actual": -2.453457832336426,
+        "predicted": -0.7773087620735168,
+        "loss": 6.07886544839182,
         "climb_name": "skip to my Lou?"
     },
     {
+        "uuid": "f71daf8599014f68ba705569917060d0",
+        "actual": 0.8310014009475708,
+        "predicted": -0.7765476703643799,
+        "loss": 5.83007483019383,
+        "climb_name": "Mami Zilla"
+    },
+    {
         "uuid": "924ADC69396148738F1C0AE0C1015D98",
-        "actual": -0.8021560311317444,
-        "predicted": 0.6847808957099915,
-        "loss": 1.4869369268417358,
+        "actual": -0.9630059003829956,
+        "predicted": 0.6090635657310486,
+        "loss": 5.701401462182292,
         "climb_name": "Ten Banger"
     },
     {
-        "uuid": "010d4aa72bf24031865310380d0ee20b",
-        "actual": 1.6673774719238281,
-        "predicted": 0.2957366108894348,
-        "loss": 1.3716408610343933,
-        "climb_name": "Helicopter feet"
-    },
-    {
-        "uuid": "11C31E39B1604203B3EE184491A8EAF5",
-        "actual": 0.15493139624595642,
-        "predicted": 1.4615353345870972,
-        "loss": 1.3066039383411407,
-        "climb_name": "Olivia Wilde"
-    },
-    {
-        "uuid": "4a4392e7919a4b0987454f274829d22f",
-        "actual": -1.8419595956802368,
-        "predicted": -0.5583074688911438,
-        "loss": 1.283652126789093,
-        "climb_name": "Mercredi 9h00"
-    },
-    {
         "uuid": "36E949A6395D4290AF08FDFBCC6010C1",
-        "actual": -0.6721805930137634,
-        "predicted": -1.9055086374282837,
-        "loss": 1.2333280444145203,
+        "actual": -0.8251389265060425,
+        "predicted": -2.395681142807007,
+        "loss": 5.69586260750373,
         "climb_name": "Bell of the Wall"
     },
     {
-        "uuid": "0BE2520FE7D74B7794ECD979A23C5A28",
-        "actual": -1.1704285144805908,
-        "predicted": 0.0528378039598465,
-        "loss": 1.2232663184404373,
-        "climb_name": "Power Ladder"
+        "uuid": "A11A0BF51BB14B6DBD118DA4A5C17299",
+        "actual": 0.27779653668403625,
+        "predicted": 1.7132095098495483,
+        "loss": 5.205791347293804,
+        "climb_name": "Butterflies in my stomach"
     },
     {
-        "uuid": "ead5bd911195414c962f449d7254b1ab",
-        "actual": -1.6903302669525146,
-        "predicted": -0.521645188331604,
-        "loss": 1.1686850786209106,
-        "climb_name": "Warm Stacks"
+        "uuid": "05254D65A5D24E4884A7EB50E056EA81",
+        "actual": -1.1698062419891357,
+        "predicted": 0.25699371099472046,
+        "loss": 5.1745546323037965,
+        "climb_name": "coco 1.0"
     },
     {
-        "uuid": "7ccbd06148624170bf909be00395ffa8",
-        "actual": -1.1610442399978638,
-        "predicted": -0.0008039921522140503,
-        "loss": 1.1602402478456497,
-        "climb_name": "You dont know me"
+        "uuid": "8f1768ec46b94f3bb0a22d55a47aadd7",
+        "actual": 1.9321997165679932,
+        "predicted": 0.5950977802276611,
+        "loss": 4.849248140275574,
+        "climb_name": "dariol"
+    },
+    {
+        "uuid": "BD6DF9A51B3D4C9A910567FE52B4EE7A",
+        "actual": -0.2736712098121643,
+        "predicted": 1.0133265256881714,
+        "loss": 4.667535964008481,
+        "climb_name": "Zoulou \ud83e\udd8d"
     }
 ]

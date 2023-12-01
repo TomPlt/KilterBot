@@ -1,72 +1,72 @@
 [
     {
         "uuid": "C2A3551748FD4527AB3827876038C526",
-        "actual": -1.0700403451919556,
-        "predicted": 0.5718473196029663,
-        "loss": 1.6418876647949219,
+        "actual": -1.2552263736724854,
+        "predicted": 0.7951357364654541,
+        "loss": 7.42337835897408,
         "climb_name": "Crookshanks"
     },
     {
         "uuid": "17533EC3C17E41D097279CE7C47A69D7",
-        "actual": -2.7536745071411133,
-        "predicted": -1.193434715270996,
-        "loss": 1.5602397918701172,
+        "actual": -3.035191535949707,
+        "predicted": -1.0562645196914673,
+        "loss": 7.164746126474345,
         "climb_name": "I Love Climbing"
     },
     {
-        "uuid": "d2ce063aca0b4a8f96d1a502d00e1ec1",
-        "actual": 0.9000859260559082,
-        "predicted": -0.6322877407073975,
-        "loss": 1.5323736667633057,
-        "climb_name": "The catcher in the rye unchained"
+        "uuid": "84885E55162D4F1ABB8B480003E8BD98",
+        "actual": -1.8268017768859863,
+        "predicted": 0.14251495897769928,
+        "loss": 7.129951907857124,
+        "climb_name": "Something Not So Crazy"
+    },
+    {
+        "uuid": "682b8e8b45f648c29dc4b499844eb586",
+        "actual": 1.7092090845108032,
+        "predicted": -0.0065602511167526245,
+        "loss": 6.211978309642123,
+        "climb_name": "Erch!"
+    },
+    {
+        "uuid": "3588839EB1BA4C34BB1700C1BFC9DCC9",
+        "actual": -1.3779712915420532,
+        "predicted": 0.1719348281621933,
+        "loss": 5.611467111377683,
+        "climb_name": "We Didn\u2019t Start The Fire"
+    },
+    {
+        "uuid": "3404e13388424a92996b627c9e418b4f",
+        "actual": -0.8255646228790283,
+        "predicted": -2.2826783657073975,
+        "loss": 5.275510394770286,
+        "climb_name": "Easy kilter"
     },
     {
         "uuid": "196853133a9d4e628cbea3b7487dcaef",
-        "actual": -0.9902008771896362,
-        "predicted": 0.3822915852069855,
-        "loss": 1.3724924623966217,
+        "actual": -1.17081880569458,
+        "predicted": 0.25786101818084717,
+        "loss": 5.172564804051245,
         "climb_name": "dddd75"
     },
     {
-        "uuid": "F01B5ACF99C14144BBB0CF87A751CB35",
-        "actual": -2.669158458709717,
-        "predicted": -1.3101356029510498,
-        "loss": 1.359022855758667,
-        "climb_name": "Sobble"
+        "uuid": "AA53E6B08AF349678AA1B4A8A085D88A",
+        "actual": -1.2743951082229614,
+        "predicted": 0.13981063663959503,
+        "loss": 5.120161102100765,
+        "climb_name": "Big Moves For A Mama"
     },
     {
         "uuid": "FF3CEC919DF9402C84395421D1B6E009",
-        "actual": -0.14112098515033722,
-        "predicted": 1.1057636737823486,
-        "loss": 1.2468846589326859,
+        "actual": -0.27315783500671387,
+        "predicted": 1.1387213468551636,
+        "loss": 5.111737732714141,
         "climb_name": "CHiPs!"
     },
     {
-        "uuid": "9D5D76F1FABC43E7A7B2EE100D7197E1",
-        "actual": 0.8089080452919006,
-        "predicted": -0.42764803767204285,
-        "loss": 1.2365560829639435,
-        "climb_name": "The shrink"
-    },
-    {
-        "uuid": "35483c2dc27c4e84a96ceab185e07a3a",
-        "actual": 0.07658300548791885,
-        "predicted": 1.296090006828308,
-        "loss": 1.2195070013403893,
-        "climb_name": "Jump, stick, and a..."
-    },
-    {
-        "uuid": "5EEF8F2DBE174E2C8DE45D03A6E7D2DA",
-        "actual": 1.14274001121521,
-        "predicted": -0.03991428017616272,
-        "loss": 1.1826542913913727,
-        "climb_name": "We\u2019re going to Rocklands"
-    },
-    {
-        "uuid": "275cf53d159c4af6b12a240cf5ea1108",
-        "actual": 0.9039004445075989,
-        "predicted": -0.2719561457633972,
-        "loss": 1.175856590270996,
-        "climb_name": "just a day"
+        "uuid": "e466ffb4fc4a4626a5beca622faa3bbe",
+        "actual": -1.1017680168151855,
+        "predicted": 0.29981672763824463,
+        "loss": 5.07446650950053,
+        "climb_name": "Pneumatic"
     }
 ]

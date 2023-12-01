@@ -1,72 +1,72 @@
 [
     {
-        "uuid": "B2F501F2423A4A11A74A928D79D7C657",
-        "actual": -1.622330904006958,
-        "predicted": 0.307002454996109,
-        "loss": 1.929333359003067,
-        "climb_name": "Doggie Arthritis"
+        "uuid": "C611DE1906CA4B35A510935D2DD9D04D",
+        "actual": 1.3771110773086548,
+        "predicted": -0.5389102697372437,
+        "loss": 6.952481839543942,
+        "climb_name": "Lille-skutt"
     },
     {
-        "uuid": "725228b4ec194734b03c706f9c504ca1",
-        "actual": -2.0541810989379883,
-        "predicted": -0.4255635738372803,
-        "loss": 1.628617525100708,
-        "climb_name": "wobbit*"
+        "uuid": "69a9f9cf23c14c7ea658fa38934abbd9",
+        "actual": 0.48144975304603577,
+        "predicted": -1.2406573295593262,
+        "loss": 6.248843853448448,
+        "climb_name": "Bad dyno"
     },
     {
-        "uuid": "747517B099AD4F6BA1848F5ED1D77FF1",
-        "actual": -1.0285038948059082,
-        "predicted": 0.5727958083152771,
-        "loss": 1.6012997031211853,
-        "climb_name": "Intro to body positioning"
+        "uuid": "25B518915A0F4AD6A0FA343FD937802A",
+        "actual": 1.3771110773086548,
+        "predicted": -0.2678007483482361,
+        "loss": 5.968732870937397,
+        "climb_name": "Poker Face"
     },
     {
-        "uuid": "7ef703fa8e674e179e3052bdb0f0fded",
-        "actual": -1.9030362367630005,
-        "predicted": -0.32208237051963806,
-        "loss": 1.5809538662433624,
-        "climb_name": "warmup power"
+        "uuid": "cafbaef6cb1e4573a87df0ca67f82913",
+        "actual": 0.9637289643287659,
+        "predicted": -0.5994558334350586,
+        "loss": 5.672177888341562,
+        "climb_name": "le bote"
     },
     {
-        "uuid": "1BDC54D071574C41AD345E77D8367422",
-        "actual": -0.8449687957763672,
-        "predicted": 0.5184000134468079,
-        "loss": 1.363368809223175,
-        "climb_name": "Count of Monte Cristo"
+        "uuid": "e50073a2ca8c44bab31c93e43f365068",
+        "actual": 0.2747586667537689,
+        "predicted": -1.1974084377288818,
+        "loss": 5.341910764444334,
+        "climb_name": "When we were younger"
     },
     {
-        "uuid": "33E6724AD5524E7FB6C71655CA2D5F8D",
-        "actual": -1.1168639659881592,
-        "predicted": 0.1509058177471161,
-        "loss": 1.2677697837352753,
-        "climb_name": "Juliette"
+        "uuid": "ca0484d54cf34bb9a20d6065e222c694",
+        "actual": -1.378770112991333,
+        "predicted": -2.8330135345458984,
+        "loss": 5.276872825150293,
+        "climb_name": "Centurion"
     },
     {
-        "uuid": "0D49E1ED1D6E43D896616F3DA50CCA6C",
-        "actual": -0.931333601474762,
-        "predicted": 0.3231528103351593,
-        "loss": 1.2544864118099213,
-        "climb_name": "Pogo-graphy"
-    },
-    {
-        "uuid": "E1F43ADF2C4E4FBA98B332C6E099CFAA",
-        "actual": -0.41405102610588074,
-        "predicted": 0.8054749369621277,
-        "loss": 1.2195259630680084,
-        "climb_name": "fruit punch"
-    },
-    {
-        "uuid": "C69CC3E3D5BA4888952E9C3E34507957",
-        "actual": -1.6477246284484863,
-        "predicted": -0.4332439601421356,
-        "loss": 1.2144806683063507,
-        "climb_name": "reduced fat"
+        "uuid": "75DE3F1D486B421DB26400C4F0B71FB2",
+        "actual": -0.8275938034057617,
+        "predicted": 0.6055686473846436,
+        "loss": 5.200378340042519,
+        "climb_name": "Spiderman Wannabe"
     },
     {
         "uuid": "e8224a2ffdf8465a936049dcfd01cc63",
-        "actual": 1.6097333431243896,
-        "predicted": 0.40738868713378906,
-        "loss": 1.2023446559906006,
+        "actual": 1.5993727445602417,
+        "predicted": 0.17042091488838196,
+        "loss": 5.185099665352896,
         "climb_name": "Air Traffic Control"
+    },
+    {
+        "uuid": "725228b4ec194734b03c706f9c504ca1",
+        "actual": -2.2973878383636475,
+        "predicted": -0.8825246095657349,
+        "loss": 5.133977718370562,
+        "climb_name": "wobbit*"
+    },
+    {
+        "uuid": "B2F501F2423A4A11A74A928D79D7C657",
+        "actual": -1.8380929231643677,
+        "predicted": -0.4357347786426544,
+        "loss": 5.088601725317933,
+        "climb_name": "Doggie Arthritis"
     }
 ]

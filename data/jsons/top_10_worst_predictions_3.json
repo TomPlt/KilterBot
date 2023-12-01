@@ -1,72 +1,72 @@
 [
     {
         "uuid": "a3ab05c481a44dabb839b150698673a5",
-        "actual": 1.6544244289398193,
-        "predicted": -1.129061222076416,
-        "loss": 2.7834856510162354,
+        "actual": 1.6145154237747192,
+        "predicted": -0.502504289150238,
+        "loss": 7.671683831740926,
         "climb_name": "the godfather of dynos"
     },
     {
+        "uuid": "7f93cfcb77074344b257d8a08efc7b82",
+        "actual": -1.356581687927246,
+        "predicted": 0.6952635645866394,
+        "loss": 7.435503766375714,
+        "climb_name": "Petro!!!"
+    },
+    {
+        "uuid": "cf07d3967686450587570c0d90ab9eee",
+        "actual": -2.3224151134490967,
+        "predicted": -0.32620617747306824,
+        "loss": 7.23388815201217,
+        "climb_name": "Glass Jelly"
+    },
+    {
         "uuid": "f1f38580742f4c99919b635cf095ce81",
-        "actual": -2.5273234844207764,
-        "predicted": -0.5150774717330933,
-        "loss": 2.012246012687683,
+        "actual": -2.7708377838134766,
+        "predicted": -1.1165193319320679,
+        "loss": 5.994940926796725,
         "climb_name": "kids ninja 2"
     },
     {
-        "uuid": "F5C64DD15CB34BD98479D2ADD6DDF9CE",
-        "actual": -1.6523818969726562,
-        "predicted": -0.11893856525421143,
-        "loss": 1.5334433317184448,
-        "climb_name": "EN\u2019s V0s @30 #5"
+        "uuid": "1BBF1C5435CF40AD836253891E016E9D",
+        "actual": 1.7708697319030762,
+        "predicted": 0.20418304204940796,
+        "loss": 5.677379796973172,
+        "climb_name": "Studio Griff 10"
     },
     {
-        "uuid": "E335DC4B64E04E24AAC8448EF40D39E0",
-        "actual": -1.4059771299362183,
-        "predicted": 0.04666110873222351,
-        "loss": 1.4526382386684418,
-        "climb_name": "J-19 Zeta 7 Rick"
+        "uuid": "5C2799BD61654895B638696F15D7481D",
+        "actual": 1.1269900798797607,
+        "predicted": -0.3645666241645813,
+        "loss": 5.405122767955717,
+        "climb_name": "bayboi"
     },
     {
-        "uuid": "CFD1D001A22941FC9E53880020E51D54",
-        "actual": -1.1787291765213013,
-        "predicted": 0.27377545833587646,
-        "loss": 1.4525046348571777,
-        "climb_name": "Broken Toe Gang"
+        "uuid": "5DB0308D71CD47A29A552E08E0EE2A70",
+        "actual": 0.35432353615760803,
+        "predicted": -1.1350501775741577,
+        "loss": 5.397212018998779,
+        "climb_name": "Like Mike"
     },
     {
-        "uuid": "0034D7C560954895886A26A4511DDB52",
-        "actual": -0.17879599332809448,
-        "predicted": 1.2516883611679077,
-        "loss": 1.4304843544960022,
-        "climb_name": "Acromantula"
+        "uuid": "E9DAE677E6F344A2AE4C1C7FAAEA44D5",
+        "actual": -0.7127019762992859,
+        "predicted": 0.6920430064201355,
+        "loss": 5.090533312398012,
+        "climb_name": "Blue Lightning"
     },
     {
-        "uuid": "4F584CCCBC6349D0B9C8E547EE65813C",
-        "actual": -0.9155887961387634,
-        "predicted": 0.46133628487586975,
-        "loss": 1.3769250810146332,
-        "climb_name": "My mom started that website"
+        "uuid": "562DE9C8E5914A1C939D001D25B14AF2",
+        "actual": 1.7248963117599487,
+        "predicted": 0.34170740842819214,
+        "loss": 5.012418108886001,
+        "climb_name": "Wagon at home"
     },
     {
-        "uuid": "853999719637451CAFE2B40A78AF9229",
-        "actual": -1.8001878261566162,
-        "predicted": -0.44065266847610474,
-        "loss": 1.3595351576805115,
-        "climb_name": "Hippy"
-    },
-    {
-        "uuid": "960460dbf5424dd3a97e6d7596878c6c",
-        "actual": -1.9592033624649048,
-        "predicted": -0.6266504526138306,
-        "loss": 1.3325529098510742,
-        "climb_name": "BFF V1 (easy peasy)"
-    },
-    {
-        "uuid": "263e4927571b4e3ba7ed7912c62ed442",
-        "actual": -0.9155887961387634,
-        "predicted": 0.3981946110725403,
-        "loss": 1.3137834072113037,
-        "climb_name": "The Pungkrocker"
+        "uuid": "C4B62D7FE1724C38B09D12F218CB771F",
+        "actual": 1.901781439781189,
+        "predicted": 0.5409260988235474,
+        "loss": 4.931485452319497,
+        "climb_name": "Burden at home"
     }
 ]
